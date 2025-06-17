@@ -1,0 +1,195 @@
+package com.example.imagedemo.impl;
+
+import com.example.imagedemo.common.ResponseDto;
+import com.example.imagedemo.common.Status;
+import com.example.imagedemo.service.*;
+import com.example.imagedemo.util.UserValidation;
+import com.example.imagedemo.dto.loginRequestDto;
+import com.example.imagedemo.model.Cart;
+import com.example.imagedemo.model.users;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Component
+public class UserManagerImpl implements UserValidation {
+    public static final Logger logger = LoggerFactory.getLogger(UserManagerImpl.class);
+    @Autowired
+    private userService userService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private jwtService jwtservice;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    @Autowired
+    private cartUseService cartUseService;
+    @Autowired
+    private cartOrderProductService cartService;
+    @Autowired
+    private orderCartService orderService;
+
+    @Transactional
+    @Override
+    public ResponseDto<?> UserRegister(users user, int requestId) throws Exception {
+        logger.info("Registering user : {}", user.getUsername());
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            logger.error("Registeration failed : username is null or empty");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User can not be blank", null);
+        }
+        if (user.getPassword() == null || user.getPassword().length() < 6) {
+            logger.error("Registeration Failed: Password can't be empty or null");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Password must be of at least 6 characters", null);
+        }
+        if (user.getRole() == null || (!user.getRole().equalsIgnoreCase("user") && !user.getRole().equalsIgnoreCase("admin"))) {
+            logger.error("Invalid role : {}", user.getRole());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Role Should be admin or user", null);
+        }
+        if (userService.getByUsername(user.getUsername()) != null) {
+            logger.error("Registeration Failed: Username {} already exists", user.getUsername());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
+        }
+        users u = new users();
+        u.setPassword(passwordEncoder.encode(user.getPassword()));
+        u.setUsername(user.getUsername());
+        u.setRole(user.getRole());
+        u.setPhoneNumber(user.getPhoneNumber());
+        u.setCreatedat(LocalDateTime.now());
+        u.setUpdatedAt(LocalDateTime.now());
+        u.setPhoneNumber(user.getPhoneNumber());
+        u.setAddress(user.getAddress());
+        userService.registerUser(u);
+        Cart cart = new Cart();
+        cart.setStatus("Empty");
+        cart.setUser(u);
+        cartUseService.setStatus(cart);
+        logger.info("User {} registered successfully", u.getUsername());
+
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User registered successfully", u.getUsername());
+    }
+
+    @Override
+    public ResponseDto<?> LoginUser(loginRequestDto User, HttpServletResponse response, int requestId) {
+        logger.info("{} is trying to login", User.getUsername());
+        if (User.getUsername() == null || User.getUsername().trim().isEmpty()) {
+            logger.error("Login failed: Username is null or empty");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is required", null);
+        }
+        if (User.getPassword() == null || User.getPassword().trim().isEmpty()) {
+            logger.error("Login failed: Password is null or empty");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Password is required", null);
+        }
+        Authentication p = SecurityContextHolder.getContext().getAuthentication();
+        if (p.getName() == null || !p.getPrincipal().equals("anonymousUser")) {
+            logger.error("User {} is already logged in", p.getName());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User is already logged in", null);
+        }
+        try {
+            Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(User.getUsername(), User.getPassword()));
+            if (auth.isAuthenticated()) {
+                String token = jwtservice.gettoken(User.getUsername());
+                ResponseCookie loginCookie = ResponseCookie.from("jwtToken", token).httpOnly(true).secure(false).sameSite("Lax").path("/").maxAge(10 * 60 * 60).build();
+                response.addHeader(HttpHeaders.SET_COOKIE, loginCookie.toString());
+                logger.info("User {} logged in successfully", User.getUsername());
+                users u = userService.getByUsername(User.getUsername());
+                u.setStatus("Active");
+                userService.registerUser(u);
+                return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", User.getUsername());
+            } else {
+                logger.error("Login failed: Invalid credentials for {}", User.getUsername());
+                return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value(), Status.UNAUTHORIZED.getStatusDescription(), requestId, "Invalid credentials", null);
+            }
+        } catch (BadCredentialsException e) {
+            logger.error("Login failed: Bad credentials for {}", User.getUsername());
+            return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value(), Status.UNAUTHORIZED.getStatusDescription(), requestId, "Invalid Credentials", null);
+        } catch (Exception e) {
+            logger.error("Unexpected error during login", e);
+            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, "An error occurred during login", null);
+        }
+    }
+
+    @Override
+    public ResponseDto<?> logOutUser(HttpServletResponse response, int requestId) throws Exception {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        logger.info("User {} is trying to log out from the website", auth.getName());
+        System.out.println(auth.getName());
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            logger.error("Logout attempt failed: No authenticated user found");
+            return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value(), Status.UNAUTHORIZED.getStatusDescription(), requestId, "No user is currently logged in", null);
+        }
+        String username = auth.getName();
+        if (userService.getByUsername(username) != null) {
+            ResponseCookie clearCookie = ResponseCookie.from("jwtToken", "").httpOnly(true).secure(false).sameSite("Lax").path("/").maxAge(0).build();
+            SecurityContextHolder.clearContext();
+            response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
+            users u = userService.getByUsername(username);
+            u.setStatus("Inactive");
+            userService.registerUser(u);
+            logger.info("User {} logged out successfully", username);
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User Logged Out Successfully", username);
+        } else {
+            logger.error("Logout failed: User not found in the database");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Invalid logout request", null);
+        }
+    }
+
+    @Transactional
+    @Override
+    public ResponseDto<?> deleteUser(int id, int requestId) throws Exception {
+        users u = userService.getSpecificUser(id);
+        String usern = u.getUsername();
+        logger.info("Trying to delete  user {}", u.getUsername());
+        Cart c = u.getCart();
+        if (u != null) {
+            orderService.deleteByCart(c);
+            userService.deleteUser(id);
+            logger.info("User  {} is deleted successfully ", u.getUsername());
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User is deleted Successfully", usern);
+        }
+        logger.error("User {} doesn't exists", u.getUsername());
+        return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User doesn't found in the database", null);
+    }
+
+    @Override
+    public ResponseDto<?> updateUser(int uId,users user, int requestId) throws Exception {
+        users u = userService.getSpecificUser(uId);
+        if (userService.getByUsername(user.getUsername()) != null) {
+            logger.error("Updation Failed: Username {} already exists", user.getUsername());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
+        }  if (user.getPassword() == null || user.getPassword().length() < 6) {
+            logger.error("Updation Failed: Password can't be empty or null");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Password must be of at least 6 characters", null);
+        }
+        if (user.getRole() == null || (!user.getRole().equalsIgnoreCase("user") && !user.getRole().equalsIgnoreCase("admin"))) {
+            logger.error("Invalid role : {}", user.getRole());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Role Should be admin or user", null);
+        }
+        if(u==null){
+            logger.error("User doesn't found");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"User doesn't found in the database", null);
+        }
+        u.setUsername(user.getUsername());
+        u.setPassword(user.getPassword());
+        u.setRole(user.getRole());
+        u.setUpdatedAt(LocalDateTime.now());
+        u.setAddress(user.getAddress());
+        u.setPhoneNumber(user.getPhoneNumber());
+        userService.registerUser(u);
+        logger.info("User {} updated successfully",user.getUsername());
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"User updated successfully",user.getUsername());
+    }
+}
+
