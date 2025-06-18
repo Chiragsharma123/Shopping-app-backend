@@ -14,4 +14,6 @@ public interface couponValidation {
     ResponseDto<?> updateExistingCoupon(int requestId, int cId, couponRequestDto couponRequestDto)throws Exception;
 
     ResponseDto<?> ApplyCoupon(int requestId, int cId , Pageable pageable)throws Exception;
+
+    ResponseDto<?> removeCoupon(int requestId, Pageable pageable)throws Exception;
 }

@@ -59,4 +59,15 @@ public class couponController {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
+
+    @PostMapping("/remove")
+    public ResponseDto<?>removeCoupon(@RequestHeader("Request-id") int requestId,@RequestParam int page , @RequestParam int size){
+        try{
+            Pageable pageable= PageRequest.of(page , size);
+            return couponManager.removeCoupon(requestId,pageable);
+        }catch (Exception e) {
+            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
+        }
+    }
+
 }

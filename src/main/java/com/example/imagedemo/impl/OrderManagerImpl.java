@@ -187,7 +187,10 @@ public class OrderManagerImpl implements OrderValidation {
         item.setStatus("Returned");
         cartService.additem(item);
         p.setQuantity(p.getQuantity() + quantity);
-        double refundedAmount = p.getPrice() * quantity;
+        double refundedAmount = p.getPrice() * quantity - order.getDiscountGivenInRs();
+        if(refundedAmount<=0){
+            refundedAmount=p.getPrice()*quantity;
+        }
         order.setRefundedAmount(refundedAmount);
         double price = order.getTotalPrice();
         order.setFinalAmount(price - refundedAmount);

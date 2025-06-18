@@ -258,4 +258,40 @@ public class couponManagerImpl implements couponValidation {
         logger.error("The conditions of the coupon {} are not full filled", coupon.getCode());
         return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "The conditions of the coupon are not fullfilled", null);
     }
+
+    @Override
+    public ResponseDto<?> removeCoupon(int requestId, Pageable pageable) throws Exception {
+        logger.info("Removing the applied coupon on the cart");
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        users u = userService.getByUsername(auth.getName());
+        Cart cart = u.getCart();
+        if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
+            logger.error("No user logged in");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User need to logged in to access the cart", null);
+        }
+        Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfUser(cart, pageable, "Active");
+        List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
+        double subtotal = 0;
+        billResponseDto billResponse = new billResponseDto();
+        if (itemsCart == null || itemsCart.isEmpty()) {
+            logger.error("Cart is empty for {} so can't place order", u.getUsername());
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No product in the cart to place a order", null);
+        }
+        for (CartOrderProductList x : itemsCart) {
+            billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
+            response.setName(x.getProduct().getName());
+            response.setPrice(x.getProduct().getPrice());
+            response.setQuantity(x.getQuantity());
+            response.setTotal(x.getProduct().getPrice() * x.getQuantity());
+            billItems.add(response);
+            subtotal += response.getTotal();
+        }
+        billResponse.setItems(billItems);
+        billResponse.setSubtotal(subtotal);
+        billResponse.setGst(subtotal * 0.18);
+        billResponse.setTotal(subtotal + subtotal * 0.18);
+        logger.info("Coupon offer removed successfully");
+       logger.info("The temporary bill for the cart is generated successfully");
+       return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"Cart bill generated ", billResponse);
+    }
 }

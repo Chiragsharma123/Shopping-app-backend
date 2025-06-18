@@ -29,7 +29,7 @@ public class securityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/**", "/user/login").permitAll().requestMatchers("/user/logout", "/cart/product/**", "/cart/products", "/order/**", "/cart/quantity/**","coupon/fetchList","coupon/Apply/**","order/placed/coupon/**").authenticated().requestMatchers("/products/upload", "/products/delete/**", "/products/updateProduct/**", "/user/user/**", "/user/delete/**","coupon/create").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/**", "/user/login").permitAll().requestMatchers("/user/logout", "/cart/product/**", "/cart/products", "/order/**", "/cart/quantity/**","coupon/fetchList","coupon/Apply/**","order/placed/coupon/**","coupon/remove").authenticated().requestMatchers("/products/upload", "/products/delete/**", "/products/updateProduct/**", "/user/user/**", "/user/delete/**","coupon/create").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -40,7 +40,6 @@ public class securityConfig {
         provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         return provider;
     }
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
