@@ -2,6 +2,7 @@ package com.example.imagedemo.controller;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.impl.ProductsManagerImpl;
 import com.example.imagedemo.model.Product;
@@ -24,9 +25,17 @@ public class productController {
     private ProductsManagerImpl productsManager;
 
     @PostMapping("/upload")
-    public ResponseDto<?> addProduct(@RequestPart Product p, @RequestPart MultipartFile image, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> addProduct(@RequestBody List<productRequestDto> p, @RequestHeader("Request-id") int requestId) {
         try {
-            return productsManager.addProduct(p, image, requestId);
+            return productsManager.addProduct(p,  requestId);
+        } catch (Exception e) {
+            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
+        }
+    }
+    @PostMapping("/UploadMultiple")
+    public ResponseDto<?>addMultipleProduct(@RequestParam("file")MultipartFile file,@RequestHeader("Request-id") int requestId ){
+        try{
+            return productsManager.addMulitpleProduct(file, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

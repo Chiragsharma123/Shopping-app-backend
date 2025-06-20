@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface couponRepo extends JpaRepository<Coupon , Integer> {
-    List<Coupon>findByStatusAndExpiresAtAfter(String active, LocalDateTime time);
+    List<Coupon>findByStatus(String active);
 
-    List<Coupon> findByStatusAndExpiresAtBefore(String active, LocalDateTime now);
+    List<Coupon> findByStatusAndCountIsOrAndExpiresAtBefore(String active,int count, LocalDateTime now);
 }

@@ -13,20 +13,21 @@ import java.util.List;
 public class couponService {
     @Autowired
     private couponRepo couponRepo;
+
     public void saveCoupon(Coupon coupon) {
         couponRepo.save(coupon);
     }
 
-    public List<Coupon> getAllActiveCoupons(String active, LocalDateTime time) {
-        return couponRepo.findByStatusAndExpiresAtAfter(active , time);
+    public List<Coupon> getAllActiveCoupons(String active) {
+        return couponRepo.findByStatus(active);
     }
 
     public List<Coupon> getAllCoupons() {
         return couponRepo.findAll();
     }
 
-    public List<Coupon> getAllExpiryCoupons(String active, LocalDateTime now) {
-        return couponRepo.findByStatusAndExpiresAtBefore(active,now);
+    public List<Coupon> getAllExpiryCoupons(String active, int count, LocalDateTime now) {
+        return couponRepo.findByStatusAndCountIsOrAndExpiresAtBefore(active, count, now);
     }
 
     public Coupon findSpecificCoupon(int cId) {

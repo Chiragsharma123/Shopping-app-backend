@@ -2,10 +2,12 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.util.ProductsValidation;
 import com.example.imagedemo.model.Product;
 import com.example.imagedemo.service.productService;
+import com.opencsv.bean.CsvToBeanBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,32 +37,35 @@ public class ProductsManagerImpl implements ProductsValidation {
     private productService productService;
 
     @Override
-    public ResponseDto<?> addProduct(Product p, MultipartFile image, int requestId) throws Exception {
+    public ResponseDto<?> addProduct(List<productRequestDto> p, int requestId) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (p == null || image == null) {
+        if (p == null) {
             logger.error("Incomplete data");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please Provide the complete data", null);
         }
-        Product ProductToAdd = productService.getSpecificProduct(p.getPId());
-        if (ProductToAdd != null) {
-            int iQuantity = ProductToAdd.getQuantity();
-            ProductToAdd.setQuantity(p.getQuantity() + iQuantity);
-            ProductToAdd.setUpdatedAt(LocalDateTime.now());
-            productService.addProduct(ProductToAdd);
-            logger.info("Existing product {} is update successfully", p.getName());
-            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Product is updated successfully", p.getName());
-        }
-        logger.info("Product {} is added successfully", p.getName());
-        p.setImageData(image.getBytes());
-        p.setCreatedAt(LocalDateTime.now());
-        p.setUpdatedAt(LocalDateTime.now());
-        if(p.getQuantity()>0) {
-            p.setStatus("Available");
-        }else{
-            p.setStatus("Unavailable");
-        }
-        productService.addProduct(p);
-        return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Product Uploaded to website successfully", p.getName());
+        List<String>productNames=new ArrayList<>();
+       for(productRequestDto dto:p){
+           Product product=new Product();
+           product.setName(dto.getName());
+           product.setDescription(dto.getDescription());
+           product.setQuantity(dto.getQuantity());
+           product.setCategory(dto.getCategory());
+           product.setUpdatedAt(LocalDateTime.now());
+           product.setCreatedAt(LocalDateTime.now());
+           product.setPrice((long) dto.getPrice());
+           product.setBrand(dto.getBrand());
+           if(dto.getQuantity()>0){
+               product.setStatus("Available");
+           }
+           else{
+               product.setStatus("Unavailable");
+           }
+           product.setImageData(dto.getImageData());
+           productNames.add(dto.getName());
+           productService.addProduct(product);
+       }
+       logger.info("All products are added successfully");
+        return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Product Uploaded to website successfully", productNames );
     }
 
     @Override
@@ -162,5 +172,35 @@ public class ProductsManagerImpl implements ProductsValidation {
         }
         logger.error("Product doesn't found in the database");
         return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Product doesn't found in the database", null);
+    }
+
+    @Override
+    public ResponseDto<?> addMulitpleProduct(MultipartFile file,int requestId) throws Exception {
+        logger.info("Adding multiple products");
+        List<Product> products = new CsvToBeanBuilder<Product>(new InputStreamReader(file.getInputStream()))
+                .withType(Product.class)
+                .withIgnoreLeadingWhiteSpace(true)
+                .build()
+                .parse();
+        List<String>pName= new ArrayList<>();
+        for(Product p:products){
+            p.setCreatedAt(LocalDateTime.now());
+            p.setUpdatedAt(LocalDateTime.now());
+            p.setStatus("Available");
+            String imagePath = p.getImagePath() != null ? p.getImagePath().trim() : null;
+            if (p.getImagePath() != null && !p.getImagePath().isBlank()) {
+                try {
+                    byte[] imageBytes = Files.readAllBytes(Paths.get(p.getImagePath()));
+                    p.setImageData(imageBytes);
+                } catch (IOException e) {
+                    logger.error("Error reading image for product: " + p.getName(), e);
+                    continue;
+                }
+            }
+            productService.addProduct(p);
+            pName.add(p.getName());
+        }
+        logger.info("All the products from the csv file are added successfully");
+        return new ResponseDto<>(Status.CREATED.getStatusCode().value(),Status.CREATED.getStatusDescription(), requestId,"All product added",pName);
     }
 }

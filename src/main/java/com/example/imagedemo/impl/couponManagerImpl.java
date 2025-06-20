@@ -76,7 +76,12 @@ public class couponManagerImpl implements couponValidation {
     public ResponseDto<?> getAllActiveCoupon(int requestId) {
         logger.info("Fetching the list of all the active coupons");
         LocalDateTime time = LocalDateTime.now();
-        List<Coupon> ActiveCoupons = couponService.getAllActiveCoupons("Active", time);
+        List<Coupon>ExpiredCoupons=couponService.getAllExpiryCoupons("Active",0,time);
+        for(Coupon expiry:ExpiredCoupons){
+            expiry.setStatus("Expired");
+            couponService.saveCoupon(expiry);
+        }
+        List<Coupon> ActiveCoupons = couponService.getAllActiveCoupons("Active");
         if (ActiveCoupons == null) {
             logger.info("No active coupon is present right now");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No active coupon is present right now", null);
@@ -96,7 +101,7 @@ public class couponManagerImpl implements couponValidation {
     @Override
     public ResponseDto<?> updateCoupons(int requestId) throws Exception {
         logger.info("Updating the expired coupons in the database");
-        List<Coupon> expiredCoupons = couponService.getAllExpiryCoupons("Active", LocalDateTime.now());
+        List<Coupon> expiredCoupons = couponService.getAllExpiryCoupons("Active", 0,LocalDateTime.now());
         if (expiredCoupons == null) {
             logger.info("There is no expired coupon to be updated");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No expired coupon found to get updated", null);
@@ -291,7 +296,7 @@ public class couponManagerImpl implements couponValidation {
         billResponse.setGst(subtotal * 0.18);
         billResponse.setTotal(subtotal + subtotal * 0.18);
         logger.info("Coupon offer removed successfully");
-       logger.info("The temporary bill for the cart is generated successfully");
-       return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"Cart bill generated ", billResponse);
+        logger.info("The temporary bill for the cart is generated successfully");
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Cart bill generated ", billResponse);
     }
 }

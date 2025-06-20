@@ -1,6 +1,7 @@
 package com.example.imagedemo.model;
 
 
+import com.opencsv.bean.CsvBindByName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,17 +19,24 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int pId;
+    @CsvBindByName
     private String name;
+    @CsvBindByName
     private String description;
+    @CsvBindByName
     private Long price;
+    @CsvBindByName
     private String category;
+    @CsvBindByName
     private int quantity;
+    @CsvBindByName
+    private String Brand;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String status;
-    private String Brand;
-
     @Lob
     private byte[] imageData;
-
+    @CsvBindByName
+    @Transient
+    private String imagePath;
 }
