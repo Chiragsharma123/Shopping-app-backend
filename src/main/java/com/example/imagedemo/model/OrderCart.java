@@ -31,5 +31,5 @@ public class OrderCart {
     private double finalAmount=0;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private long discountGivenInRs;
+    private double discountGivenInRs;
 }

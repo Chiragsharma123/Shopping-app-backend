@@ -1,6 +1,8 @@
 package com.example.imagedemo.controller;
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.PagingDto;
+import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.impl.CartManagerImpl;
 import com.example.imagedemo.service.cartOrderProductService;
 import org.slf4j.Logger;
@@ -22,9 +24,10 @@ public class cartController {
     @Autowired
     private CartManagerImpl cartManager;
 
-    @PostMapping("/product/{p_id}")
-    public ResponseDto<?> addProductToCart(@PathVariable int p_id, @RequestParam int quantity, @RequestHeader("Request-id") int requestId) {
+    @PostMapping("/productAdd")
+    public ResponseDto<?> addProductToCart(@RequestBody productRequestDto P, @RequestParam int quantity, @RequestHeader("Request-id") int requestId) {
         try {
+            int p_id=P.getPId();
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
                 logger.error("No user logged in");
@@ -37,9 +40,10 @@ public class cartController {
         }
     }
 
-    @DeleteMapping("/product/{p_id}")
-    public ResponseDto<?> removeProductFromCart(@PathVariable int p_id, @RequestHeader("Request-id") int requestId) {
+    @DeleteMapping("/productDelete")
+    public ResponseDto<?> removeProductFromCart(@RequestBody productRequestDto P, @RequestHeader("Request-id") int requestId) {
         try {
+            int p_id= P.getPId();
             return cartManager.removeProductFromCart(p_id, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
@@ -47,8 +51,10 @@ public class cartController {
     }
 
     @GetMapping("/products")
-    public ResponseDto<?> getAllProductsFromCart(@RequestHeader("Request-id") int requestId,@RequestParam int page , @RequestParam int size) {
+    public ResponseDto<?> getAllProductsFromCart(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto request) {
         try {
+            int page = request.getPage();
+            int size=request.getSize();
             Pageable pageable= PageRequest.of(page , size);
             return cartManager.getAllProductsFromCart(requestId,pageable);
         } catch (Exception e) {
@@ -56,9 +62,11 @@ public class cartController {
         }
     }
 
-    @PatchMapping("/quantity/{pId}")
-    public ResponseDto<?> UpdateQuantity(@PathVariable int pId, @RequestParam int quantity, @RequestHeader("Request-id") int requestId) {
+    @PatchMapping("/quantity")
+    public ResponseDto<?> UpdateQuantity(@RequestBody productRequestDto P, @RequestHeader("Request-id") int requestId) {
         try {
+            int pId=P.getPId();
+            int quantity = P.getQuantity();
             return cartManager.updateQuantity(pId, quantity, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);

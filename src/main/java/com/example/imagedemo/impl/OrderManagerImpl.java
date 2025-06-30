@@ -2,6 +2,7 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.OrderDto;
 import com.example.imagedemo.dto.billResponseDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.model.*;
@@ -11,12 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.UndeclaredThrowableException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -119,37 +120,39 @@ public class OrderManagerImpl implements OrderValidation {
     }
 
     @Override
-    public ResponseDto<?> getOrderByCustomDate(int requestId, long duration, String unit, Pageable pageable) {
+    public ResponseDto<?> getOrderByCustomDate(int requestId, OrderDto request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        logger.info("Fetching all the orders placed in last {} {}", duration, unit);
+        Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
+        logger.info("Fetching all the orders placed in last {} {}", request.getDuration(), request.getUnit());
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No User is logged in", null);
         }
         users u = userService.getByUsername(auth.getName());
         Cart c = u.getCart();
-        String TimeUnit = unit.toUpperCase();
+        String TimeUnit = request.getUnit().toUpperCase();
         ChronoUnit chronoUnit = null;
         chronoUnit = ChronoUnit.valueOf(TimeUnit);
-        LocalDateTime fromDate = LocalDateTime.now().minus(duration, chronoUnit);
+        LocalDateTime fromDate = LocalDateTime.now().minus(request.getDuration(), chronoUnit);
         Page<OrderCart> orders = orderService.getOrdersFromPast(c, "Placed", pageable, fromDate);
         List<Integer> orderIds = new ArrayList<>();
         for (OrderCart x : orders) {
             orderIds.add(x.getOrderId());
         }
-        logger.info("All the orders placed in last {} {} are fetched successfully", duration, unit);
+        logger.info("All the orders placed in last {} {} are fetched successfully", request.getDuration(), request.getUnit());
         return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Orders List fetched successfully", orderIds);
     }
 
     @Override
-    public ResponseDto<?> getAllProductsOfOrder(int requestId, Pageable pageable, int orderId) throws Exception {
+    public ResponseDto<?> getAllProductsOfOrder(int requestId, OrderDto request) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        logger.info("Fetching all the Product Placed in the order number {}", orderId);
+        Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
+        logger.info("Fetching all the Product Placed in the order number {}", request.getOrderId());
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No User is logged in", null);
         }
-        OrderCart order = orderService.getOrderById(orderId);
+        OrderCart order = orderService.getOrderById(request.getOrderId());
         if (order == null) {
             logger.error("Order id not found in the database ");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Order Id doesn't exists", null);
@@ -167,13 +170,16 @@ public class OrderManagerImpl implements OrderValidation {
             dto.setPrice(items.getPrice());
             responseList.add(dto);
         }
-        logger.info("All the products of the order number {} is fetched successfully", orderId);
+        logger.info("All the products of the order number {} is fetched successfully", request.getOrderId());
         return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "All the products of the order are fetched", responseList);
     }
 
     @Override
-    public ResponseDto<?> returnProductFromOrder(int requestId, int orderId, int pId, int quantity) throws Exception {
+    public ResponseDto<?> returnProductFromOrder(int requestId, OrderDto request) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        int pId=request.getProductId();
+        int orderId=request.getOrderId();
+        int quantity=request.getQuantity();
         Product p = productService.getSpecificProduct(pId);
         OrderCart order = orderService.getOrderById(orderId);
         logger.info("Requesting to return  product {} from the order {}", p.getName(), orderId);
@@ -201,8 +207,9 @@ public class OrderManagerImpl implements OrderValidation {
     }
 
     @Override
-    public ResponseDto<?> placeOrderWithCoupon(int requestId, Pageable pageable, int cId) throws Exception {
-        Coupon coupon = couponService.findSpecificCoupon(cId);
+    public ResponseDto<?> placeOrderWithCoupon(int requestId, OrderDto request) throws Exception {
+        Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
+        Coupon coupon = couponService.findSpecificCoupon(request.getCouponId());
         if (coupon == null) {
             logger.error("Please enter a valid coupon code");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please enter a valid coupon", null);
@@ -235,75 +242,81 @@ public class OrderManagerImpl implements OrderValidation {
                 totalItemsPrice += items.getProduct().getPrice();
                 System.out.println(totalItemsPrice);
             }
-            if (totalItemsPrice > coupon.getOfferAvailableOn()) {
+
+            List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
+            double subtotal = 0;
+            double totalDiscount=0;
+            billResponseDto billResponse = new billResponseDto();
+            double discountAmount=0;
+            for (CartOrderProductList x : itemsCart) {
                 logger.info("Offer is valid wait offer is applying and cart is getting updated");
                 for (CartOrderProductList items : itemsCart) {
                     items.setCoupon(coupon);
                     cartService.additem(items);
                 }
-                List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
-                double subtotal = 0;
-                billResponseDto billResponse = new billResponseDto();
-
-                for (CartOrderProductList x : itemsCart) {
-                    billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
-                    response.setName(x.getProduct().getName());
-                    response.setPrice(x.getProduct().getPrice());
-                    response.setQuantity(x.getQuantity());
-                    response.setTotal(x.getProduct().getPrice() * x.getQuantity());
-                    billItems.add(response);
-                    subtotal += response.getTotal();
-                }
-                double discountAmount = 0;
-                if (coupon.getDiscountUnit().equals("Percentage")) {
-                    System.out.println(coupon.getDiscountValue());
-                    discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
-                    System.out.println("Discount amount in percentage " + discountAmount);
-                } else if (coupon.getDiscountUnit().equals("Price")) {
-                    discountAmount = coupon.getDiscountValue();
-                    System.out.println("Discounted amount in price" + discountAmount);
-                }
-                order.setCart(cart);
-                order.setStatus("Placed");
-                order.setTotalPrice(subtotal);
-                order.setFinalAmount(subtotal + subtotal * 0.18 - discountAmount);
-                order.setCreatedAt(LocalDateTime.now());
-                order.setUpdatedAt(LocalDateTime.now());
-                order.setCoupon(coupon);
-                order.setDiscountGivenInRs((long) discountAmount);
-                orderService.saveOrder(order);
-                logger.info("Order {} produced successfully for {} after apllying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
-                billResponse.setItems(billItems);
-                billResponse.setSubtotal(subtotal);
-                billResponse.setDiscountedAmount(discountAmount);
-                subtotal -= discountAmount;
-                billResponse.setAfterDiscountAmount(subtotal);
-                billResponse.setGst(subtotal * 0.18);
-                billResponse.setTotal(subtotal + subtotal * 0.18);
-                logger.info("Bill generated successfully for the order {} of rupees {} after applying coupon {}", order.getOrderId(), billResponse.getTotal(), coupon.getCode());
-                logger.info("Updating  quantity of all the products purchased in the product database");
-                for (CartOrderProductList items : itemsCart) {
-                    Product p = items.getProduct();
-                    p.setQuantity(p.getQuantity() - items.getQuantity());
-                    if (p.getQuantity() <= 0) {
-                        p.setStatus("Out of stock");
+                billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
+                response.setName(x.getProduct().getName());
+                response.setPrice(x.getProduct().getPrice());
+                response.setQuantity(x.getQuantity());
+                response.setTotal(x.getProduct().getPrice() * x.getQuantity());
+                subtotal += response.getTotal();
+                System.out.println(subtotal);
+                if (totalItemsPrice > coupon.getOfferAvailableOn() && x.getProduct() == coupon.getProduct()) {
+                    if (coupon.getDiscountUnit().equals("Percentage")) {
+                        System.out.println(coupon.getDiscountValue());
+                        discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
+                        System.out.println("Discount amount in percentage " + discountAmount);
+                    } else if (coupon.getDiscountUnit().equals("Price")) {
+                        discountAmount = coupon.getDiscountValue();
+                        System.out.println("Discounted amount in price" + discountAmount);
                     }
+                    response.setDiscount(discountAmount);
                 }
-                logger.info("Product database updated successfully");
-                logger.info("Clearing the cartitems for the user {} as order placed", u.getUsername());
-                for (CartOrderProductList items : itemsCart) {
-                    items.setOrder(order);
-                    items.setStatus("Placed");
-                    cartService.additem(items);
-                }
-                logger.info("Database of the coupon is updating");
-                int count = coupon.getCount();
-                coupon.setCount(count - 1);
-                couponService.saveCoupon(coupon);
-                logger.info("Cart is cleared successfully");
-                return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Order is placed after apllying coupon", billResponse);
+                totalDiscount+=discountAmount;
+                System.out.println(totalDiscount);
+                billItems.add(response);
             }
+            order.setCart(cart);
+            order.setStatus("Placed");
+            order.setTotalPrice(subtotal);
+            order.setFinalAmount((subtotal-totalDiscount)+(subtotal-totalDiscount)*0.18);
+            order.setCreatedAt(LocalDateTime.now());
+            order.setUpdatedAt(LocalDateTime.now());
+            order.setCoupon(coupon);
+            order.setDiscountGivenInRs(totalDiscount);
+            orderService.saveOrder(order);
+            logger.info("Order {} produced successfully for {} after apllying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
+            billResponse.setItems(billItems);
+            billResponse.setSubtotal(subtotal);
+            billResponse.setDiscountedAmount(totalDiscount);
+            subtotal -= totalDiscount;
+            billResponse.setAfterDiscountAmount(subtotal);
+            billResponse.setGst(subtotal * 0.18);
+            billResponse.setTotal(subtotal + (subtotal * 0.18));
+            logger.info("Bill generated successfully for the order {} of rupees {} after applying coupon {}", order.getOrderId(), billResponse.getTotal(), coupon.getCode());
+            logger.info("Updating  quantity of all the products purchased in the product database");
+            for (CartOrderProductList items : itemsCart) {
+                Product p = items.getProduct();
+                p.setQuantity(p.getQuantity() - items.getQuantity());
+                if (p.getQuantity() <= 0) {
+                    p.setStatus("Out of stock");
+                }
+            }
+            logger.info("Product database updated successfully");
+            logger.info("Clearing the cartitems for the user {} as order placed", u.getUsername());
+            for (CartOrderProductList items : itemsCart) {
+                items.setOrder(order);
+                items.setStatus("Placed");
+                cartService.additem(items);
+            }
+            logger.info("Database of the coupon is updating");
+            int count = coupon.getCount();
+            coupon.setCount(count - 1);
+            couponService.saveCoupon(coupon);
+            logger.info("Cart is cleared successfully");
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Order is placed after apllying coupon", billResponse);
         }
+
         if (category.equals("Product") || category.equals("CustomProduct")) {
             logger.info("Applying coupon {} to the Product", coupon.getCode());
             Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfUser(cart, pageable, "Active");
@@ -311,47 +324,51 @@ public class OrderManagerImpl implements OrderValidation {
                 logger.error("Cart is empty for {} so can't place order", u.getUsername());
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No product in the cart to place a order", null);
             }
-            for (CartOrderProductList items : itemsCart) {
-                if (items.getProduct() == coupon.getProduct() && items.getQuantity() >= coupon.getOfferAvailableOn()) {
-                    OfferApplied = true;
-                    items.setCoupon(coupon);
-                }
-            }
-            double discountAmount = 0;
+            double totalDiscount = 0;
+            double totalAmount = 0;
             List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
             double subtotal = 0;
             billResponseDto billResponse = new billResponseDto();
-
             for (CartOrderProductList x : itemsCart) {
+                double discountAmount = 0;
                 billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
                 response.setName(x.getProduct().getName());
                 response.setPrice(x.getProduct().getPrice());
                 response.setQuantity(x.getQuantity());
                 response.setTotal(x.getProduct().getPrice() * x.getQuantity());
-                if (coupon.getDiscountUnit().equals("Percentage")) {
-                    discountAmount = coupon.getDiscountValue() / 100 * response.getTotal();
-                } else if (coupon.getDiscountUnit().equals("Price")) {
-                    discountAmount = coupon.getDiscountValue();
+                if (x.getProduct() == coupon.getProduct() && x.getQuantity() >= coupon.getOfferAvailableOn()) {
+                    System.out.println(coupon.getDiscountUnit() + coupon.getDescription());
+                    if (coupon.getDiscountUnit().equals("Percentage")) {
+                        discountAmount = (coupon.getDiscountValue() / 100) * response.getTotal();
+                    } else if (coupon.getDiscountUnit().equals("Price")) {
+                        discountAmount = coupon.getDiscountValue();
+                    }
+                    response.setDiscount(discountAmount);
+                    System.out.println("discount amount "+ discountAmount);
+                    totalDiscount += discountAmount;
+                    System.out.println("Total dis" + totalDiscount);
                 }
-                response.setDiscount(discountAmount);
                 billItems.add(response);
-                subtotal += response.getTotal() - discountAmount;
+                subtotal = response.getTotal() - totalDiscount;
+                System.out.println(subtotal);
+                totalAmount += subtotal;
             }
             order.setCart(cart);
             order.setStatus("Placed");
-            order.setTotalPrice(subtotal);
-            order.setFinalAmount(subtotal + subtotal * 0.18);
+            order.setTotalPrice(totalAmount);
+            order.setFinalAmount(totalAmount + totalAmount * 0.18);
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setCoupon(coupon);
-            order.setDiscountGivenInRs((long) discountAmount);
+            order.setDiscountGivenInRs(totalDiscount);
             orderService.saveOrder(order);
             logger.info("Order {} produced successfully for {} after apllying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
             billResponse.setItems(billItems);
             billResponse.setItems(billItems);
-            billResponse.setSubtotal(subtotal);
-            billResponse.setGst(subtotal * 0.18);
-            billResponse.setTotal(subtotal + subtotal * 0.18);
+            billResponse.setDiscountedAmount(totalDiscount);
+            billResponse.setSubtotal(totalAmount);
+            billResponse.setGst(totalAmount * 0.18);
+            billResponse.setTotal(totalAmount + totalAmount * 0.18);
             logger.info("Bill generated successfully for the order {} of rupees {} after applying coupon {}", order.getOrderId(), billResponse.getTotal(), coupon.getCode());
             logger.info("Updating  quantity of all the products purchased in the product database");
             for (CartOrderProductList items : itemsCart) {

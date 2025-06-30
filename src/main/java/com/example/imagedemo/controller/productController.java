@@ -2,6 +2,7 @@ package com.example.imagedemo.controller;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.PagingDto;
 import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.impl.ProductsManagerImpl;
@@ -42,47 +43,37 @@ public class productController {
     }
 
     @GetMapping("/products")
-    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId , @RequestParam int page , @RequestParam int size) {
+    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId , @RequestBody PagingDto P) {
         try {
-            Pageable pageable= PageRequest.of(page , size);
+            Pageable pageable= PageRequest.of(P.getPage(),P.getSize());
             return productsManager.getAllProducts(requestId , pageable);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
-    @PutMapping("updateProduct/{p_id}")
-    public ResponseDto<?> updateProduct(@PathVariable int p_id, @RequestPart Product p, @RequestPart MultipartFile image, @RequestHeader("Request-id") int requestId) {
+    @DeleteMapping("/delete")
+    public ResponseDto<?> deleteProduct(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            return productsManager.updateProduct(p_id, p, image, requestId);
+            return (productsManager.deleteProduct(request.getPId(), requestId));
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
-    @DeleteMapping("/delete/{p_id}")
-    public ResponseDto<?> deleteProduct(@PathVariable int p_id, @RequestHeader("Request-id") int requestId) {
+    @GetMapping("/category")
+    public ResponseDto<?> fetchByCategory(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId ) {
         try {
-            return (productsManager.deleteProduct(p_id, requestId));
+            return productsManager.fetchByCategory( request , requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
-    @GetMapping("/{category}")
-    public ResponseDto<?> fetchByCategory(@PathVariable String category, @RequestHeader("Request-id") int requestId ,  @RequestParam int page , @RequestParam int size) {
+    @PatchMapping("/updateQuantity")
+    public ResponseDto<?> updateQuantity( @RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            Pageable pageable= PageRequest.of(page , size);
-            return (productsManager.fetchByCategory(category, requestId,pageable));
-        } catch (Exception e) {
-            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
-        }
-    }
-
-    @PatchMapping("/updatequantity/{pId}")
-    public ResponseDto<?> updateQuantity(@PathVariable int pId, int quantity, @RequestHeader("Request-id") int requestId) {
-        try {
-            return productsManager.updateQuantity(pId, quantity, requestId);
+            return productsManager.updateQuantity(request.getPId(), request.getQuantity(), requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

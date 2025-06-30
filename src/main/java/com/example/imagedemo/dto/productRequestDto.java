@@ -9,11 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 @AllArgsConstructor
 @NoArgsConstructor
 public class productRequestDto {
-        private String name;
-        private String description;
-        private double price;
-        private String category;
-        private int quantity;
-        private String brand;
-        private byte[] imageData;
+    private int pId;
+    private String name;
+    private String description;
+    private long price;
+    private String category;
+    private int quantity;
+    private String brand;
+    private byte[] imageData;
+
+    private PagingDto Paging;
 }

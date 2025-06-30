@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class couponRequestDto {
+    private int cId;
     private String code;
     private String category;
     private String description;
@@ -18,4 +19,5 @@ public class couponRequestDto {
     private long duration;
     private String unit;
     private int pId;
+    private PagingDto pagingDto;
 }

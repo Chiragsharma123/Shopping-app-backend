@@ -14,11 +14,9 @@ public interface ProductsValidation {
 
     ResponseDto<?> getAllProducts(int requestId , Pageable pageable) throws Exception;
 
-    ResponseDto<?> updateProduct(int p_id, Product p, MultipartFile image, int requestId) throws Exception;
-
     ResponseDto<?> deleteProduct(int pId, int requestId) throws Exception;
 
-    ResponseDto<?> fetchByCategory(String category, int requestId , Pageable pageable) throws Exception;
+    ResponseDto<?> fetchByCategory(productRequestDto request, int requestId ) throws Exception;
 
     ResponseDto<?> updateQuantity(int pId, int quantity, int requestId) throws Exception;
 

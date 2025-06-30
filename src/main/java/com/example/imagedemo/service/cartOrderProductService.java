@@ -32,8 +32,8 @@ public class cartOrderProductService {
         cartRepo.deleteAllByCart(c);
     }
 
-    public CartOrderProductList getSpecificItems(Cart c, Product p) {
-        return cartRepo.findByCartAndProduct(c, p);
+    public CartOrderProductList getSpecificItems(Cart c, Product p, String active) {
+        return cartRepo.findByCartAndProductAndStatus(c, p, active);
     }
 
     public Page<CartOrderProductList> getAllProductsOfOrder(OrderCart order, Pageable pageable) {
@@ -42,5 +42,9 @@ public class cartOrderProductService {
 
     public CartOrderProductList getProductToReturn(Cart c, Product p, OrderCart order) {
         return cartRepo.findByCartAndProductAndOrder(c, p, order);
+    }
+
+    public Page<CartOrderProductList> getAllItemsOfOrder(OrderCart order, Pageable pageable) {
+        return cartRepo.findByOrder(order, pageable);
     }
 }

@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,35 +44,53 @@ public class ProductsManagerImpl implements ProductsValidation {
             logger.error("Incomplete data");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please Provide the complete data", null);
         }
-        List<String>productNames=new ArrayList<>();
-       for(productRequestDto dto:p){
-           Product product=new Product();
-           product.setName(dto.getName());
-           product.setDescription(dto.getDescription());
-           product.setQuantity(dto.getQuantity());
-           product.setCategory(dto.getCategory());
-           product.setUpdatedAt(LocalDateTime.now());
-           product.setCreatedAt(LocalDateTime.now());
-           product.setPrice((long) dto.getPrice());
-           product.setBrand(dto.getBrand());
-           if(dto.getQuantity()>0){
-               product.setStatus("Available");
-           }
-           else{
-               product.setStatus("Unavailable");
-           }
-           product.setImageData(dto.getImageData());
-           productNames.add(dto.getName());
-           productService.addProduct(product);
-       }
-       logger.info("All products are added successfully");
-        return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Product Uploaded to website successfully", productNames );
+        List<String> productNames = new ArrayList<>();
+        for (productRequestDto dto : p) {
+            Product productToAdd = productService.getSpecificProduct(dto.getPId());
+            if (productToAdd == null) {
+                Product product = new Product();
+                product.setName(dto.getName());
+                product.setDescription(dto.getDescription());
+                product.setQuantity(dto.getQuantity());
+                product.setCategory(dto.getCategory());
+                product.setUpdatedAt(LocalDateTime.now());
+                product.setCreatedAt(LocalDateTime.now());
+                product.setPrice((long) dto.getPrice());
+                product.setBrand(dto.getBrand());
+                if (dto.getQuantity() > 0) {
+                    product.setStatus("Available");
+                } else {
+                    product.setStatus("Unavailable");
+                }
+                product.setImageData(dto.getImageData());
+                productNames.add(dto.getName());
+                productService.addProduct(product);
+            }
+            productToAdd.setName(dto.getName());
+            productToAdd.setDescription(dto.getDescription());
+            productToAdd.setQuantity(dto.getQuantity());
+            productToAdd.setCategory(dto.getCategory());
+            productToAdd.setUpdatedAt(LocalDateTime.now());
+            productToAdd.setCreatedAt(LocalDateTime.now());
+            productToAdd.setPrice(dto.getPrice());
+            productToAdd.setBrand(dto.getBrand());
+            if (dto.getQuantity() > 0) {
+                productToAdd.setStatus("Available");
+            } else {
+                productToAdd.setStatus("Unavailable");
+            }
+            productToAdd.setImageData(dto.getImageData());
+            productNames.add(dto.getName());
+            productService.addProduct(productToAdd);
+        }
+        logger.info("All products are added successfully");
+        return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Product Uploaded to website successfully", productNames);
     }
 
     @Override
-    public ResponseDto<?> getAllProducts(int requestId , Pageable pageable) throws Exception {
+    public ResponseDto<?> getAllProducts(int requestId, Pageable pageable) throws Exception {
         logger.info("Fetching all the products");
-       Page<Product> response = productService.getallproduct(pageable);
+        Page<Product> response = productService.getallproduct(pageable);
         List<productResponseDto> ProductList = new ArrayList<>();
         if (!response.isEmpty()) {
             for (Product p : response) {
@@ -92,35 +111,6 @@ public class ProductsManagerImpl implements ProductsValidation {
     }
 
     @Override
-    public ResponseDto<?> updateProduct(int p_id, Product p, MultipartFile image, int requestid) throws Exception {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if ((p == null) || (image == null)) {
-            logger.error("Incomplete data");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestid, "Please Provide the complete Data", null);
-        }
-        Product p1 = productService.getSpecificProduct(p_id);
-        if (p1 != null) {
-            p1.setImageData(image.getBytes());
-            p1.setName(p.getName());
-            p1.setDescription(p.getDescription());
-            p1.setPrice(p.getPrice());
-            p1.setCategory(p.getCategory());
-            p1.setCreatedAt(p.getCreatedAt());
-            p1.setUpdatedAt(LocalDateTime.now());
-            if(p.getQuantity() + p1.getQuantity()>0){
-                p1.setStatus("Available");
-            }else{
-                p1.setStatus("Unavailable");
-            }
-            productService.addProduct(p1);
-            logger.info("Product {} is updated successfully", p.getName());
-            return new ResponseDto<>(Status.UPDATED.getStatusCode().value(), Status.UPDATED.getStatusDescription(), requestid, "Product is Updated Successfully", p1);
-        }
-        logger.error("Product is not present in the database");
-        return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestid, "Product is not present in the Database", null);
-    }
-
-    @Override
     public ResponseDto<?> deleteProduct(int pId, int requestId) throws Exception {
         logger.info("Deleting a Product");
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -134,9 +124,11 @@ public class ProductsManagerImpl implements ProductsValidation {
     }
 
     @Override
-    public ResponseDto<?> fetchByCategory(String category, int requestId , Pageable pageable) throws Exception {
+    public ResponseDto<?> fetchByCategory(productRequestDto request, int requestId) throws Exception {
+        String category= request.getCategory();
+        Pageable pageable= PageRequest.of(request.getPaging().getPage() , request.getPaging().getSize());
         logger.info("Fetching all products of {}", category);
-        Page<Product> response = productService.getByCategory(category , pageable);
+        Page<Product> response = productService.getByCategory(category, pageable);
         if (response.isEmpty()) {
             logger.info("No product of {} category is present on the website", category);
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No product of the requested category is present in the database", null);
@@ -163,7 +155,7 @@ public class ProductsManagerImpl implements ProductsValidation {
         if (p != null) {
             p.setQuantity(quantity);
             p.setUpdatedAt(LocalDateTime.now());
-            if(quantity>0){
+            if (quantity > 0) {
                 p.setStatus("Available");
             }
             productService.addProduct(p);
@@ -175,15 +167,11 @@ public class ProductsManagerImpl implements ProductsValidation {
     }
 
     @Override
-    public ResponseDto<?> addMulitpleProduct(MultipartFile file,int requestId) throws Exception {
+    public ResponseDto<?> addMulitpleProduct(MultipartFile file, int requestId) throws Exception {
         logger.info("Adding multiple products");
-        List<Product> products = new CsvToBeanBuilder<Product>(new InputStreamReader(file.getInputStream()))
-                .withType(Product.class)
-                .withIgnoreLeadingWhiteSpace(true)
-                .build()
-                .parse();
-        List<String>pName= new ArrayList<>();
-        for(Product p:products){
+        List<Product> products = new CsvToBeanBuilder<Product>(new InputStreamReader(file.getInputStream())).withType(Product.class).withIgnoreLeadingWhiteSpace(true).build().parse();
+        List<String> pName = new ArrayList<>();
+        for (Product p : products) {
             p.setCreatedAt(LocalDateTime.now());
             p.setUpdatedAt(LocalDateTime.now());
             p.setStatus("Available");
@@ -201,6 +189,6 @@ public class ProductsManagerImpl implements ProductsValidation {
             pName.add(p.getName());
         }
         logger.info("All the products from the csv file are added successfully");
-        return new ResponseDto<>(Status.CREATED.getStatusCode().value(),Status.CREATED.getStatusDescription(), requestId,"All product added",pName);
+        return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "All product added", pName);
     }
 }

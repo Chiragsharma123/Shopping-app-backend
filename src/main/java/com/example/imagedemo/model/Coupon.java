@@ -19,11 +19,11 @@ public class Coupon {
     private String code;
     private int count;
     private String discountUnit;
-    private long discountValue;
+    private double discountValue;
     private String description;
     private String category;
     private String status;
-    private long offerAvailableOn;
+    private double offerAvailableOn;
     private LocalDateTime expiresAt;
 
     @ManyToOne

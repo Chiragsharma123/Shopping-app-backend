@@ -2,6 +2,8 @@ package com.example.imagedemo.controller;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.OrderDto;
+import com.example.imagedemo.dto.PagingDto;
 import com.example.imagedemo.dto.billResponseDto;
 import com.example.imagedemo.impl.OrderManagerImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +19,10 @@ public class orderController {
     private OrderManagerImpl orderManager;
 
     @PostMapping("/placed")
-    public ResponseDto<?> placeOrder(@RequestHeader("Request-id") int requestId, @RequestParam int page, @RequestParam int size) {
+    public ResponseDto<?> placeOrder(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto P) {
         try {
+            int page = P.getPage();
+            int size =P.getSize();
             Pageable pageable = PageRequest.of(page, size);
             return orderManager.placeOrder(requestId, pageable );
         } catch (Exception e) {
@@ -26,20 +30,19 @@ public class orderController {
         }
     }
 
-    @PostMapping("/placed/coupon/{cId}")
-    public ResponseDto<?>placeOrderWithCoupon(@RequestHeader("Request-id") int requestId, @RequestParam int page, @RequestParam int size , @PathVariable int cId){
+    @PostMapping("/placed/coupon")
+    public ResponseDto<?>placeOrderWithCoupon(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto request){
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            return orderManager.placeOrderWithCoupon(requestId, pageable , cId);
+            return orderManager.placeOrderWithCoupon(requestId, request );
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
     @GetMapping("/orders")
-    public ResponseDto<?> getAllOrders(@RequestHeader("Request-id") int requestId, @RequestParam int page, @RequestParam int size) {
+    public ResponseDto<?> getAllOrders(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto Paging) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
+            Pageable pageable = PageRequest.of(Paging.getPage(), Paging.getSize());
             return orderManager.getAllOrders(requestId, pageable);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
@@ -47,29 +50,27 @@ public class orderController {
     }
 
     @GetMapping("/history")
-    public ResponseDto<?> getOrdersByCustomDate(@RequestHeader("Request-id") int requestId, @RequestParam long duration, @RequestParam(defaultValue = "MONTHS") String unit, @RequestParam int page, @RequestParam int size) {
+    public ResponseDto<?> getOrdersByCustomDate(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto request) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            return orderManager.getOrderByCustomDate(requestId, duration, unit, pageable);
+            return orderManager.getOrderByCustomDate(requestId, request);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
-    @GetMapping("/ProductList/{orderId}")
-    public ResponseDto<?> getAllProductOfOrder(@RequestHeader("Request-id") int requestId, @RequestParam int page, @RequestParam int size, @PathVariable int orderId) {
+    @GetMapping("/ProductList")
+    public ResponseDto<?> getAllProductOfOrder(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto request) {
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            return orderManager.getAllProductsOfOrder(requestId, pageable, orderId);
+            return orderManager.getAllProductsOfOrder(requestId, request);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
-    @PostMapping("/{orderId}/Product/{pId}")
-    public ResponseDto<?> returnProductFromOrder(@RequestHeader("Request-id") int requestId, @PathVariable int orderId, @PathVariable int pId,@RequestParam int quantity) {
+    @PostMapping("/Product")
+    public ResponseDto<?> returnProductFromOrder(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto request) {
         try {
-            return orderManager.returnProductFromOrder(requestId, orderId, pId , quantity);
+            return orderManager.returnProductFromOrder(requestId, request);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

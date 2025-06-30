@@ -43,7 +43,7 @@ public class CartManagerImpl implements CartValidation {
         users user = userService.getByUsername(username);
         Product p = productService.getSpecificProduct(pid);
         Cart c = user.getCart();
-        CartOrderProductList ItemToAdd = cartService.getSpecificItems(c, p);
+        CartOrderProductList ItemToAdd = cartService.getSpecificItems(c, p , "Active");
         if (p.getQuantity() > 0 && p.getQuantity() >= quantity) {
             if (ItemToAdd == null || ItemToAdd.getStatus().equals("Placed") || ItemToAdd.getStatus().equals("Returned") || ItemToAdd.getStatus().equals("Invoiced")) {
                 CartOrderProductList itemsCart = new CartOrderProductList();
@@ -83,7 +83,7 @@ public class CartManagerImpl implements CartValidation {
         }
         users u = userService.getByUsername(auth.getName());
         Cart c = u.getCart();
-        CartOrderProductList ItemToDelete = cartService.getSpecificItems(c, p);
+        CartOrderProductList ItemToDelete = cartService.getSpecificItems(c, p, "Active");
         ItemToDelete.setStatus("Inactive");
         ItemToDelete.setQuantity(0);
         cartService.additem(ItemToDelete);
@@ -133,7 +133,7 @@ public class CartManagerImpl implements CartValidation {
         }
         users user = userService.getByUsername(auth.getName());
         Cart c = cartUseService.getSpecificCart(user.getId());
-        CartOrderProductList ItemToUpdate = cartService.getSpecificItems(c, p);
+        CartOrderProductList ItemToUpdate = cartService.getSpecificItems(c, p,"Active");
         if (ItemToUpdate == null) {
             CartOrderProductList itemsCart = new CartOrderProductList();
             itemsCart.setProduct(p);

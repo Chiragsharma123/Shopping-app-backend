@@ -2,6 +2,7 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.InvoiceRequestDto;
 import com.example.imagedemo.model.*;
 import com.example.imagedemo.service.cartOrderProductService;
 import com.example.imagedemo.service.orderCartService;
@@ -26,10 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -42,13 +45,19 @@ public class InvoiceManagerImpl implements InvoiceValidation {
     private cartOrderProductService cartService;
 
     @Override
-    public ResponseDto<?> getInvoicePdfGenerator(int orderId, int requestId, String filePath, Pageable pageable) throws Exception {
+    public ResponseDto<?> getInvoicePdfGenerator(InvoiceRequestDto request, int requestId , String PDF_DIR) throws Exception {
+        int page = request.getPaging().getPage();
+        int size = request.getPaging().getSize();
+        int orderId=request.getOrderId();
+        Pageable pageable = PageRequest.of(page , size);
+        String filename = "invoice_order_" + orderId + ".pdf";
+        String filePath = Paths.get(PDF_DIR, filename).toString();
         logger.info("Generating invoice for the order {}", orderId);
         OrderCart order = orderService.getOrderById(orderId);
         Cart cart = order.getCart();
         users user = cart.getUser();
         Coupon coupon = order.getCoupon();
-        Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfUser(cart, pageable, "Placed");
+        Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfOrder(order, pageable);
         if (itemsCart.isEmpty() || order.getStatus().equals("Invoiced") || order.getStatus().equals("Inactive")) {
             logger.error("There is no product in the order {} so invoice can't be generated", orderId);
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No itmes is placed in the order", null);
@@ -93,40 +102,36 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         double subtotal = 0;
 
         for (CartOrderProductList items : itemsCart) {
-            Product p = items.getProduct();
-            double itemTotal = items.getQuantity() * p.getPrice();
-            subtotal += itemTotal;
+            if (items.getOrder().getOrderId() == orderId) {
+                Product p = items.getProduct();
+                double itemTotal = items.getQuantity() * p.getPrice();
+                subtotal += itemTotal;
 
-            table.addCell(String.valueOf(count++));
-            table.addCell(p.getName());
-            table.addCell(p.getBrand());
-            table.addCell(String.valueOf(items.getQuantity()));
-            table.addCell("Rs " + p.getPrice());
-            table.addCell("Rs " + itemTotal);
-            items.setStatus("Invoiced");
-            cartService.additem(items);
+                table.addCell(String.valueOf(count++));
+                table.addCell(p.getName());
+                table.addCell(p.getBrand());
+                table.addCell(String.valueOf(items.getQuantity()));
+                table.addCell("Rs " + p.getPrice());
+                table.addCell("Rs " + itemTotal);
+                items.setStatus("Invoiced");
+                cartService.additem(items);
+            }
         }
         document.add(table);
-
-        double gst = subtotal * 0.18;
-        double total = subtotal + gst;
         double discount = 0;
         if (coupon != null) {
-            if (coupon.getDiscountUnit().equals("Percentage")) {
-                discount = (coupon.getDiscountValue() * subtotal) / 100;
-            }
-            if (coupon.getDiscountUnit().equals("Price")) {
-                discount = subtotal - coupon.getDiscountValue();
-            }
+            discount = order.getDiscountGivenInRs();
         }
-
+        subtotal -= discount;
+        double gst = subtotal * 0.18;
+        double total = subtotal + gst;
         document.add(new Paragraph("\n"));
         document.add(new Paragraph("Subtotal: Rs " + String.format("%.2f", subtotal)));
         document.add(new Paragraph("GST (18%): Rs " + String.format("%.2f", gst)));
         if (discount != 0) {
             document.add(new Paragraph("Discount : Rs " + String.format("%.2f", discount)));
         }
-        document.add(new Paragraph("Grand Total: Rs " + String.format("%.2f", total - discount)).setBold().setFontSize(14));
+        document.add(new Paragraph("Grand Total: Rs " + String.format("%.2f", total)).setBold().setFontSize(14));
 
         document.add(new Paragraph("\n"));
 
