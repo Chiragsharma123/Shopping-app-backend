@@ -52,9 +52,13 @@ public class couponManagerImpl implements couponValidation {
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No product found in the database", null);
         }
         Coupon couponToAdd = couponService.findSpecificCoupon(couponRequestDto.getCId());
+        if (couponToAdd == null && couponRequestDto.getCId() != 0) {
+            logger.error("The coupon doesn't exists in the database please provide a valid coupon id");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "The coupon doesn't exists in the database please provide a valid coupon id", null);
+        }
         ChronoUnit chronoUnit = ChronoUnit.valueOf(couponRequestDto.getUnit().toUpperCase());
         LocalDateTime expiryTime = LocalDateTime.now().plus(couponRequestDto.getDuration(), chronoUnit);
-        if(couponToAdd==null) {
+        if (couponToAdd == null) {
             Coupon coupon = new Coupon();
             coupon.setCode(couponRequestDto.getCode());
             coupon.setCategory(couponRequestDto.getCategory());
@@ -75,25 +79,41 @@ public class couponManagerImpl implements couponValidation {
             logger.info("Coupon is created successfully");
             return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Coupon is created sucessfully", coupon.getCode());
         }
-        couponToAdd.setCode(couponRequestDto.getCode());
-        couponToAdd.setCategory(couponRequestDto.getCategory());
-        couponToAdd.setCount(couponRequestDto.getCount());
-        couponToAdd.setDescription(couponRequestDto.getDescription());
-        couponToAdd.setDiscountUnit(couponRequestDto.getDiscountUnit());
-        couponToAdd.setDiscountValue(couponRequestDto.getDiscountValue());
-        couponToAdd.setOfferAvailableOn(couponRequestDto.getOfferAvailableOn());
-        couponToAdd.setProduct(product);
+        if (couponRequestDto.getCode() != null) {
+            couponToAdd.setCode(couponRequestDto.getCode());
+        }
+        if (couponRequestDto.getCategory() != null) {
+            couponToAdd.setCategory(couponRequestDto.getCategory());
+        }
+        if (couponRequestDto.getCount() != 0) {
+            couponToAdd.setCount(couponRequestDto.getCount());
+        }
+        if (couponRequestDto.getDescription() != null) {
+            couponToAdd.setDescription(couponRequestDto.getDescription());
+        }
+        if (couponRequestDto.getDiscountUnit() != null) {
+            couponToAdd.setDiscountUnit(couponRequestDto.getDiscountUnit());
+        }
+        if (couponRequestDto.getDiscountValue() != 0) {
+            couponToAdd.setDiscountValue(couponRequestDto.getDiscountValue());
+        }
+        if (couponRequestDto.getOfferAvailableOn() != 0) {
+            couponToAdd.setOfferAvailableOn(couponRequestDto.getOfferAvailableOn());
+        }
+        if (product != null) {
+            couponToAdd.setProduct(product);
+        }
         if (couponRequestDto.getCount() > 0) {
             couponToAdd.setStatus("Active");
         } else {
             couponToAdd.setStatus("Inactive");
         }
-        couponToAdd.setExpiresAt(expiryTime);
+        if (couponRequestDto.getExpiresAt() != null) {
+            couponToAdd.setExpiresAt(expiryTime);
+        }
         couponService.saveCoupon(couponToAdd);
-
         logger.info("Coupon is updated successfully");
         return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Coupon is updated successfully", couponToAdd.getCode());
-
     }
 
     @Override
@@ -124,8 +144,16 @@ public class couponManagerImpl implements couponValidation {
 
     @Override
     public ResponseDto<?> ApplyCoupon(int requestId, couponRequestDto c) throws Exception {
+        if (c.getCId() == 0) {
+            logger.error("Please provide the id of the coupon you want to apply");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide the id of the coupon ", null);
+        }
         Coupon coupon = couponService.findSpecificCoupon(c.getCId());
-        Pageable pageable = PageRequest.of(c.getPagingDto().getPage(),c.getPagingDto().getSize());
+        if (c.getCId() != 0 && coupon == null) {
+            logger.error("Please enter a valid coupon the coupon doesn't exists");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Please enter a valid coupon ", null);
+        }
+        Pageable pageable = PageRequest.of(c.getPagingDto().getPage(), c.getPagingDto().getSize());
         String category = coupon.getCategory();
         boolean OfferApplied = false;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -199,8 +227,8 @@ public class couponManagerImpl implements couponValidation {
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No product in the cart to place a order", null);
             }
             double discountAmount = 0;
-            double totalAmount =0;
-            double totalDiscount=0;
+            double totalAmount = 0;
+            double totalDiscount = 0;
             List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
             double subtotal = 0;
             billResponseDto billResponse = new billResponseDto();
@@ -214,22 +242,22 @@ public class couponManagerImpl implements couponValidation {
                 response.setTotal(total);
                 if (x.getProduct() == coupon.getProduct() && x.getQuantity() >= coupon.getOfferAvailableOn()) {
                     if (coupon.getDiscountUnit().equals("Percentage")) {
-                        discountAmount = (double) coupon.getDiscountValue() / 100 * response.getTotal();
+                        discountAmount = coupon.getDiscountValue() / 100 * response.getTotal();
                     } else if (coupon.getDiscountUnit().equals("Price")) {
                         discountAmount = coupon.getDiscountValue();
                     }
                     response.setDiscount(discountAmount);
-                    totalDiscount+=discountAmount;
+                    totalDiscount += discountAmount;
                 }
                 subtotal = total - totalDiscount;
-                totalAmount+=subtotal;
+                totalAmount += subtotal;
                 billItems.add(response);
             }
             billResponse.setDiscountedAmount(totalDiscount);
             billResponse.setItems(billItems);
             billResponse.setSubtotal(totalAmount);
             billResponse.setGst(totalAmount * 0.18);
-            billResponse.setTotal(totalAmount + totalAmount* 0.18);
+            billResponse.setTotal(totalAmount + totalAmount * 0.18);
             logger.info("Coupon {} offer applied successfully on the Product {}", coupon.getCode(), coupon.getProduct());
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Coupon applied successfully", billResponse);
         }

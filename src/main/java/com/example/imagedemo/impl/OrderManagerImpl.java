@@ -121,6 +121,10 @@ public class OrderManagerImpl implements OrderValidation {
 
     @Override
     public ResponseDto<?> getOrderByCustomDate(int requestId, OrderDto request) {
+        if(request.getOrderId()==0 || request.getDuration()==0 || request.getUnit().isEmpty()){
+            logger.error("Please make a valid request");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(),requestId,"Please make a valid request provide the complete data",null);
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
         logger.info("Fetching all the orders placed in last {} {}", request.getDuration(), request.getUnit());
@@ -145,6 +149,10 @@ public class OrderManagerImpl implements OrderValidation {
 
     @Override
     public ResponseDto<?> getAllProductsOfOrder(int requestId, OrderDto request) throws Exception {
+        if(request.getOrderId()==0){
+            logger.error("Please provide the order id");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide the order id",null);
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
         logger.info("Fetching all the Product Placed in the order number {}", request.getOrderId());
@@ -153,7 +161,7 @@ public class OrderManagerImpl implements OrderValidation {
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No User is logged in", null);
         }
         OrderCart order = orderService.getOrderById(request.getOrderId());
-        if (order == null) {
+        if (order == null && request.getOrderId()!=0) {
             logger.error("Order id not found in the database ");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Order Id doesn't exists", null);
         }
@@ -209,7 +217,15 @@ public class OrderManagerImpl implements OrderValidation {
     @Override
     public ResponseDto<?> placeOrderWithCoupon(int requestId, OrderDto request) throws Exception {
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
+        if(request.getCouponId()==0){
+            logger.error("Please provide the coupon to get applied");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide the coupon to be applied",null);
+        }
         Coupon coupon = couponService.findSpecificCoupon(request.getCouponId());
+        if(request.getCouponId()!=0 && coupon==null){
+            logger.error("Please provide a valid coupon");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Invalid coupon",null);
+        }
         if (coupon == null) {
             logger.error("Please enter a valid coupon code");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please enter a valid coupon", null);

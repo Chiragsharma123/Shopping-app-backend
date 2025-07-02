@@ -25,16 +25,16 @@ public class cartController {
     private CartManagerImpl cartManager;
 
     @PostMapping("/productAdd")
-    public ResponseDto<?> addProductToCart(@RequestBody productRequestDto P, @RequestParam int quantity, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> addProductToCart(@RequestBody productRequestDto P, @RequestHeader("Request-id") int requestId) {
         try {
-            int p_id=P.getPId();
+            int quantity=P.getQuantity();
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
                 logger.error("No user logged in");
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "you need to logged in for accessing the cart", null);
             }
             String username = ((UserDetails) auth.getPrincipal()).getUsername();
-            return cartManager.addProductToCart(p_id, username, quantity, requestId);
+            return cartManager.addProductToCart(P.getPId(), username, quantity, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

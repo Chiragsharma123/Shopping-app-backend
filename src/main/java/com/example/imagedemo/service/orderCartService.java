@@ -32,8 +32,6 @@ public class orderCartService {
     public Page<OrderCart> getOrdersFromPast(Cart c,String status , Pageable pageable, LocalDateTime fromDate) {
         return orderRepo.findByCartAndStatusAndCreatedAtAfter(c,status, pageable , fromDate);
     }
-
-
     public OrderCart getOrderById(int orderId) {
         return orderRepo.findById(orderId).orElse(null);
     }

@@ -47,6 +47,9 @@ public class ProductsManagerImpl implements ProductsValidation {
         List<String> productNames = new ArrayList<>();
         for (productRequestDto dto : p) {
             Product productToAdd = productService.getSpecificProduct(dto.getPId());
+            if(productToAdd==null && dto.getPId()!=0){
+                logger.error("Product for the {} id doesn't exits in the database",dto.getPId());
+            }
             if (productToAdd == null) {
                 Product product = new Product();
                 product.setName(dto.getName());
@@ -66,20 +69,33 @@ public class ProductsManagerImpl implements ProductsValidation {
                 productNames.add(dto.getName());
                 productService.addProduct(product);
             }
-            productToAdd.setName(dto.getName());
-            productToAdd.setDescription(dto.getDescription());
-            productToAdd.setQuantity(dto.getQuantity());
-            productToAdd.setCategory(dto.getCategory());
+            if(dto.getName()!=null) {
+                productToAdd.setName(dto.getName());
+            }
+            if(dto.getDescription()!=null) {
+                productToAdd.setDescription(dto.getDescription());
+            }
+            if(dto.getQuantity()!=0) {
+                productToAdd.setQuantity(dto.getQuantity());
+            }
+            if(dto.getCategory()!=null) {
+                productToAdd.setCategory(dto.getCategory());
+            }
             productToAdd.setUpdatedAt(LocalDateTime.now());
-            productToAdd.setCreatedAt(LocalDateTime.now());
-            productToAdd.setPrice(dto.getPrice());
-            productToAdd.setBrand(dto.getBrand());
+            if(dto.getPrice()!=0) {
+                productToAdd.setPrice(dto.getPrice());
+            }
+            if(dto.getBrand()!=null) {
+                productToAdd.setBrand(dto.getBrand());
+            }
             if (dto.getQuantity() > 0) {
                 productToAdd.setStatus("Available");
             } else {
                 productToAdd.setStatus("Unavailable");
             }
-            productToAdd.setImageData(dto.getImageData());
+            if(dto.getImageData()!=null) {
+                productToAdd.setImageData(dto.getImageData());
+            }
             productNames.add(dto.getName());
             productService.addProduct(productToAdd);
         }

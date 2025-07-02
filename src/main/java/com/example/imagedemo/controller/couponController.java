@@ -43,7 +43,7 @@ public class couponController {
         }
     }
 
-    @PostMapping("/remove")
+    @PostMapping("/removeCoupon")
     public ResponseDto<?> removeCoupon(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto Paging) {
         try {
             int page = Paging.getPage();

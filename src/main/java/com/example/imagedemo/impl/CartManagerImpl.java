@@ -42,6 +42,10 @@ public class CartManagerImpl implements CartValidation {
     public ResponseDto<?> addProductToCart(int pid, String username, int quantity, int requestId) throws Exception {
         users user = userService.getByUsername(username);
         Product p = productService.getSpecificProduct(pid);
+        if(pid!=0 && p == null ){
+            logger.error("The Product doesn't exists in the database");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(),Status.NOT_FOUND.getStatusDescription(),requestId,"Product doesn't exists in the database",null);
+        }
         Cart c = user.getCart();
         CartOrderProductList ItemToAdd = cartService.getSpecificItems(c, p , "Active");
         if (p.getQuantity() > 0 && p.getQuantity() >= quantity) {
@@ -60,6 +64,7 @@ public class CartManagerImpl implements CartValidation {
                 return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Product added to the cart Successfully", p.getName());
             }
             ItemToAdd.setStatus("Active");
+            ItemToAdd.setUpdatedAt(LocalDateTime.now());
             ItemToAdd.setQuantity(ItemToAdd.getQuantity() + quantity);
             cartService.additem(ItemToAdd);
             logger.info("Cart Updated Successfully for product {}", p.getName());
@@ -75,6 +80,10 @@ public class CartManagerImpl implements CartValidation {
     @Override
     public ResponseDto<?> removeProductFromCart(int pid, int requestId) throws Exception {
         Product p = productService.getSpecificProduct(pid);
+        if(pid!= 0 && p==null){
+            logger.error("The product doesn't exists in the cart");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(),Status.NOT_FOUND.getStatusDescription(), requestId,"Product deosn't exists in the cart",null);
+        }
         logger.info("Removing product {} from the cart", p.getName());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {

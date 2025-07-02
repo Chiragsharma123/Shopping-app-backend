@@ -1,8 +1,11 @@
 package com.example.imagedemo.controller;
 
+import com.example.imagedemo.common.AESUtil;
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.EncryptedDto;
 import com.example.imagedemo.dto.loginRequestDto;
+import com.example.imagedemo.dto.userDto;
 import com.example.imagedemo.impl.UserManagerImpl;
 import com.example.imagedemo.model.users;
 import com.example.imagedemo.service.userService;
@@ -20,9 +23,11 @@ public class usersController {
     private userService uService;
     @Autowired
     private UserManagerImpl userManager;
+    @Autowired
+    private AESUtil aesUtil;
 
     @PostMapping("/register")
-    public ResponseDto<?> registerUser(@RequestBody users user, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> registerUser(@RequestBody userDto user,  @RequestHeader("Request-id") int requestId) {
         try {
             return userManager.UserRegister(user, requestId);
         } catch (Exception e) {
@@ -31,8 +36,9 @@ public class usersController {
     }
 
     @PostMapping("/login")
-    public ResponseDto<?> loginUser(@RequestBody loginRequestDto logUser, HttpServletResponse httpServletResponse, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> loginUser(@RequestBody EncryptedDto encryptedDto, HttpServletResponse httpServletResponse, @RequestHeader("Request-id") int requestId) {
         try {
+            loginRequestDto logUser = aesUtil.decryptToObject(encryptedDto.getPayload(), loginRequestDto.class);
             return userManager.LoginUser(logUser, httpServletResponse, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
@@ -58,12 +64,4 @@ public class usersController {
         }
     }
 
-    @PutMapping("/update/{uId}")
-    public ResponseDto<?>updateUser(@PathVariable int uId ,@RequestBody users user, @RequestHeader("Request-id")int requestId){
-        try{
-            return userManager.updateUser(uId ,user, requestId);
-        }catch (Exception e) {
-            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
-        }
-    }
 }

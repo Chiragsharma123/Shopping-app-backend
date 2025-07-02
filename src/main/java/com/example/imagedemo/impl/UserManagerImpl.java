@@ -2,6 +2,7 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.userDto;
 import com.example.imagedemo.service.*;
 import com.example.imagedemo.util.UserValidation;
 import com.example.imagedemo.dto.loginRequestDto;
@@ -44,8 +45,39 @@ public class UserManagerImpl implements UserValidation {
 
     @Transactional
     @Override
-    public ResponseDto<?> UserRegister(users user, int requestId) throws Exception {
+    public ResponseDto<?> UserRegister(userDto user, int requestId) throws Exception {
         logger.info("Registering user : {}", user.getUsername());
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if(user.getId()!=0 && auth!=null){
+            users userToRegister = userService.getSpecificUser(user.getId());
+            if(userToRegister==null){
+                logger.error("Please provide a valid id");
+                return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide a valid",null);
+            }
+            if (userService.getByUsername(user.getUsername()) != null) {
+                logger.error("Registeration Failed: Username {} already exists", user.getUsername());
+                return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
+            }
+            if(user.getPassword()!=null) {
+                userToRegister.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+            if(user.getUsername()!=null) {
+                userToRegister.setUsername(user.getUsername());
+            }
+            if(user.getRole()!=null) {
+                userToRegister.setRole(user.getRole());
+            }
+            if(user.getPhoneNumber()!=null) {
+                userToRegister.setPhoneNumber(user.getPhoneNumber());
+            }
+            userToRegister.setUpdatedAt(LocalDateTime.now());
+            if(user.getAddress()!=null) {
+                userToRegister.setAddress(user.getAddress());
+            }
+            userService.registerUser(userToRegister);
+            logger.info("user {} is updated successfully",userToRegister.getUsername());
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(),requestId,"user is updated successfully",userToRegister.getUsername());
+        }
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             logger.error("Registeration failed : username is null or empty");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User can not be blank", null);
@@ -62,6 +94,7 @@ public class UserManagerImpl implements UserValidation {
             logger.error("Registeration Failed: Username {} already exists", user.getUsername());
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
         }
+
         users u = new users();
         u.setPassword(passwordEncoder.encode(user.getPassword()));
         u.setUsername(user.getUsername());
@@ -79,6 +112,7 @@ public class UserManagerImpl implements UserValidation {
         logger.info("User {} registered successfully", u.getUsername());
 
         return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User registered successfully", u.getUsername());
+
     }
 
     @Override
@@ -163,33 +197,5 @@ public class UserManagerImpl implements UserValidation {
         return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User doesn't found in the database", null);
     }
 
-    @Override
-    public ResponseDto<?> updateUser(int uId,users user, int requestId) throws Exception {
-        users u = userService.getSpecificUser(uId);
-        if (userService.getByUsername(user.getUsername()) != null) {
-            logger.error("Updation Failed: Username {} already exists", user.getUsername());
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
-        }  if (user.getPassword() == null || user.getPassword().length() < 6) {
-            logger.error("Updation Failed: Password can't be empty or null");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Password must be of at least 6 characters", null);
-        }
-        if (user.getRole() == null || (!user.getRole().equalsIgnoreCase("user") && !user.getRole().equalsIgnoreCase("admin"))) {
-            logger.error("Invalid role : {}", user.getRole());
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Role Should be admin or user", null);
-        }
-        if(u==null){
-            logger.error("User doesn't found");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"User doesn't found in the database", null);
-        }
-        u.setUsername(user.getUsername());
-        u.setPassword(user.getPassword());
-        u.setRole(user.getRole());
-        u.setUpdatedAt(LocalDateTime.now());
-        u.setAddress(user.getAddress());
-        u.setPhoneNumber(user.getPhoneNumber());
-        userService.registerUser(u);
-        logger.info("User {} updated successfully",user.getUsername());
-        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"User updated successfully",user.getUsername());
-    }
 }
 
