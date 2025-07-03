@@ -27,7 +27,7 @@ public class usersController {
     private AESUtil aesUtil;
 
     @PostMapping("/register")
-    public ResponseDto<?> registerUser(@RequestBody userDto user,  @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> registerUser(@RequestBody userDto user, @RequestHeader("Request-id") int requestId) {
         try {
             return userManager.UserRegister(user, requestId);
         } catch (Exception e) {
@@ -54,11 +54,10 @@ public class usersController {
         }
     }
 
-    @DeleteMapping("/delete/{uid}")
-    public ResponseDto<?> deleteUser(@PathVariable int uid, @RequestHeader("Request-id") int requestId) {
+    @DeleteMapping("/delete")
+    public ResponseDto<?> deleteUser(@RequestBody userDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            return userManager.deleteUser(uid, requestId);
-
+            return userManager.deleteUser(request, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

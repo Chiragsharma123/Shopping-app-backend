@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @RestController
@@ -28,14 +29,15 @@ public class productController {
     @PostMapping("/upload")
     public ResponseDto<?> addProduct(@RequestBody List<productRequestDto> p, @RequestHeader("Request-id") int requestId) {
         try {
-            return productsManager.addProduct(p,  requestId);
+            return productsManager.addProduct(p, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
+
     @PostMapping("/UploadMultiple")
-    public ResponseDto<?>addMultipleProduct(@RequestParam("file")MultipartFile file,@RequestHeader("Request-id") int requestId ){
-        try{
+    public ResponseDto<?> addMultipleProduct(@RequestParam("file") MultipartFile file, @RequestHeader("Request-id") int requestId) {
+        try {
             return productsManager.addMulitpleProduct(file, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
@@ -43,10 +45,10 @@ public class productController {
     }
 
     @GetMapping("/products")
-    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId , @RequestBody PagingDto P) {
+    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto P) {
         try {
-            Pageable pageable= PageRequest.of(P.getPage(),P.getSize());
-            return productsManager.getAllProducts(requestId , pageable);
+            Pageable pageable = PageRequest.of(P.getPage(), P.getSize());
+            return productsManager.getAllProducts(requestId, pageable);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
@@ -62,16 +64,16 @@ public class productController {
     }
 
     @GetMapping("/category")
-    public ResponseDto<?> fetchByCategory(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId ) {
+    public ResponseDto<?> fetchByCategory(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            return productsManager.fetchByCategory( request , requestId);
+            return productsManager.fetchByCategory(request, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
     @PatchMapping("/updateQuantity")
-    public ResponseDto<?> updateQuantity( @RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> updateQuantity(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
             return productsManager.updateQuantity(request.getPId(), request.getQuantity(), requestId);
         } catch (Exception e) {

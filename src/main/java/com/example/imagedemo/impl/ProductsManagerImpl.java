@@ -47,8 +47,8 @@ public class ProductsManagerImpl implements ProductsValidation {
         List<String> productNames = new ArrayList<>();
         for (productRequestDto dto : p) {
             Product productToAdd = productService.getSpecificProduct(dto.getPId());
-            if(productToAdd==null && dto.getPId()!=0){
-                logger.error("Product for the {} id doesn't exits in the database",dto.getPId());
+            if (productToAdd == null && dto.getPId() != 0) {
+                logger.error("Product for the {} id doesn't exits in the database", dto.getPId());
             }
             if (productToAdd == null) {
                 Product product = new Product();
@@ -58,7 +58,7 @@ public class ProductsManagerImpl implements ProductsValidation {
                 product.setCategory(dto.getCategory());
                 product.setUpdatedAt(LocalDateTime.now());
                 product.setCreatedAt(LocalDateTime.now());
-                product.setPrice((long) dto.getPrice());
+                product.setPrice(dto.getPrice());
                 product.setBrand(dto.getBrand());
                 if (dto.getQuantity() > 0) {
                     product.setStatus("Available");
@@ -69,23 +69,23 @@ public class ProductsManagerImpl implements ProductsValidation {
                 productNames.add(dto.getName());
                 productService.addProduct(product);
             }
-            if(dto.getName()!=null) {
+            if (dto.getName() != null) {
                 productToAdd.setName(dto.getName());
             }
-            if(dto.getDescription()!=null) {
+            if (dto.getDescription() != null) {
                 productToAdd.setDescription(dto.getDescription());
             }
-            if(dto.getQuantity()!=0) {
+            if (dto.getQuantity() != 0) {
                 productToAdd.setQuantity(dto.getQuantity());
             }
-            if(dto.getCategory()!=null) {
+            if (dto.getCategory() != null) {
                 productToAdd.setCategory(dto.getCategory());
             }
             productToAdd.setUpdatedAt(LocalDateTime.now());
-            if(dto.getPrice()!=0) {
+            if (dto.getPrice() != 0) {
                 productToAdd.setPrice(dto.getPrice());
             }
-            if(dto.getBrand()!=null) {
+            if (dto.getBrand() != null) {
                 productToAdd.setBrand(dto.getBrand());
             }
             if (dto.getQuantity() > 0) {
@@ -93,7 +93,7 @@ public class ProductsManagerImpl implements ProductsValidation {
             } else {
                 productToAdd.setStatus("Unavailable");
             }
-            if(dto.getImageData()!=null) {
+            if (dto.getImageData() != null) {
                 productToAdd.setImageData(dto.getImageData());
             }
             productNames.add(dto.getName());
@@ -141,8 +141,8 @@ public class ProductsManagerImpl implements ProductsValidation {
 
     @Override
     public ResponseDto<?> fetchByCategory(productRequestDto request, int requestId) throws Exception {
-        String category= request.getCategory();
-        Pageable pageable= PageRequest.of(request.getPaging().getPage() , request.getPaging().getSize());
+        String category = request.getCategory();
+        Pageable pageable = PageRequest.of(request.getPaging().getPage(), request.getPaging().getSize());
         logger.info("Fetching all products of {}", category);
         Page<Product> response = productService.getByCategory(category, pageable);
         if (response.isEmpty()) {

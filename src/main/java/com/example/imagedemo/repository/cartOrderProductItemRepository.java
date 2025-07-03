@@ -13,8 +13,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface cartOrderProductItemRepository extends JpaRepository<CartOrderProductList, Integer> {
-    Page<CartOrderProductList> findAllByCartAndStatus(Cart cart , Pageable pageable,String status);
-    CartOrderProductList findByCartAndProductAndStatus(Cart cart , Product p , String active);
+    Page<CartOrderProductList> findAllByCartAndStatus(Cart cart, Pageable pageable, String status);
+
+    CartOrderProductList findByCartAndProductAndStatus(Cart cart, Product p, String active);
+
     void deleteAllByCart(Cart cart);
 
     Page<CartOrderProductList> findByOrder(OrderCart order, Pageable pageable);

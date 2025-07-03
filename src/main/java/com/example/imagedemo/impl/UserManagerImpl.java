@@ -3,6 +3,7 @@ package com.example.imagedemo.impl;
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
 import com.example.imagedemo.dto.userDto;
+import com.example.imagedemo.model.CartOrderProductList;
 import com.example.imagedemo.service.*;
 import com.example.imagedemo.util.UserValidation;
 import com.example.imagedemo.dto.loginRequestDto;
@@ -24,6 +25,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class UserManagerImpl implements UserValidation {
@@ -48,35 +51,39 @@ public class UserManagerImpl implements UserValidation {
     public ResponseDto<?> UserRegister(userDto user, int requestId) throws Exception {
         logger.info("Registering user : {}", user.getUsername());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if(user.getId()!=0 && auth!=null){
+        if (auth == null || user.getId() != 0 || !auth.getPrincipal().equals("anonymousUser")) {
+            logger.error("Invalid request need to logout");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Invalid request need to logout", null);
+        }
+        if (user.getId() != 0 && auth != null) {
             users userToRegister = userService.getSpecificUser(user.getId());
-            if(userToRegister==null){
+            if (userToRegister == null) {
                 logger.error("Please provide a valid id");
-                return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide a valid",null);
+                return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide a valid", null);
             }
             if (userService.getByUsername(user.getUsername()) != null) {
                 logger.error("Registeration Failed: Username {} already exists", user.getUsername());
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
             }
-            if(user.getPassword()!=null) {
+            if (user.getPassword() != null) {
                 userToRegister.setPassword(passwordEncoder.encode(user.getPassword()));
             }
-            if(user.getUsername()!=null) {
+            if (user.getUsername() != null) {
                 userToRegister.setUsername(user.getUsername());
             }
-            if(user.getRole()!=null) {
+            if (user.getRole() != null) {
                 userToRegister.setRole(user.getRole());
             }
-            if(user.getPhoneNumber()!=null) {
+            if (user.getPhoneNumber() != null) {
                 userToRegister.setPhoneNumber(user.getPhoneNumber());
             }
             userToRegister.setUpdatedAt(LocalDateTime.now());
-            if(user.getAddress()!=null) {
+            if (user.getAddress() != null) {
                 userToRegister.setAddress(user.getAddress());
             }
             userService.registerUser(userToRegister);
-            logger.info("user {} is updated successfully",userToRegister.getUsername());
-            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(),requestId,"user is updated successfully",userToRegister.getUsername());
+            logger.info("user {} is updated successfully", userToRegister.getUsername());
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "user is updated successfully", userToRegister.getUsername());
         }
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             logger.error("Registeration failed : username is null or empty");
@@ -182,14 +189,23 @@ public class UserManagerImpl implements UserValidation {
 
     @Transactional
     @Override
-    public ResponseDto<?> deleteUser(int id, int requestId) throws Exception {
-        users u = userService.getSpecificUser(id);
+    public ResponseDto<?> deleteUser(userDto request, int requestId) throws Exception {
+        if(request.getId()==0){
+            logger.error("Please provide a user id to be deleted");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(),requestId,"Please make a valid request provide the user id to be deleted",null);
+        }
+        users u = userService.getSpecificUser(request.getId());
+        if(u==null && request.getId()!=0){
+            logger.error("The user you want to delete doesn't exists in the database");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(),Status.NOT_FOUND.getStatusDescription(), requestId,"User doesn't found in the database",null);
+        }
         String usern = u.getUsername();
         logger.info("Trying to delete  user {}", u.getUsername());
         Cart c = u.getCart();
         if (u != null) {
+            cartService.deleteByCart(c);
             orderService.deleteByCart(c);
-            userService.deleteUser(id);
+            userService.deleteUser(request.getId());
             logger.info("User  {} is deleted successfully ", u.getUsername());
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User is deleted Successfully", usern);
         }

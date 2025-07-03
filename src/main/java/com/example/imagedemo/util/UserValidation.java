@@ -13,6 +13,6 @@ public interface UserValidation {
 
     ResponseDto<?> logOutUser(HttpServletResponse response, int requestId) throws Exception;
 
-    ResponseDto<?> deleteUser(int id, int requestId) throws Exception;
+    ResponseDto<?> deleteUser(userDto request, int requestId) throws Exception;
 
 }
