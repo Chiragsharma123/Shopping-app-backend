@@ -277,21 +277,20 @@ public class OrderManagerImpl implements OrderValidation {
                 response.setTotal(x.getProduct().getPrice() * x.getQuantity());
                 subtotal += response.getTotal();
                 System.out.println(subtotal);
-                if (totalItemsPrice > coupon.getOfferAvailableOn() && x.getProduct() == coupon.getProduct()) {
-                    if (coupon.getDiscountUnit().equals("Percentage")) {
-                        System.out.println(coupon.getDiscountValue());
-                        discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
-                        System.out.println("Discount amount in percentage " + discountAmount);
-                    } else if (coupon.getDiscountUnit().equals("Price")) {
-                        discountAmount = coupon.getDiscountValue();
-                        System.out.println("Discounted amount in price" + discountAmount);
-                    }
-                    response.setDiscount(discountAmount);
-                }
-                totalDiscount+=discountAmount;
-                System.out.println(totalDiscount);
                 billItems.add(response);
             }
+            if (totalItemsPrice > coupon.getOfferAvailableOn()) {
+                if (coupon.getDiscountUnit().equals("Percentage")) {
+                    System.out.println(coupon.getDiscountValue());
+                    discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
+                    System.out.println("Discount amount in percentage " + discountAmount);
+                } else if (coupon.getDiscountUnit().equals("Price")) {
+                    discountAmount = coupon.getDiscountValue();
+                    System.out.println("Discounted amount in price" + discountAmount);
+                }
+            }
+            totalDiscount+=discountAmount;
+            System.out.println(totalDiscount);
             order.setCart(cart);
             order.setStatus("Placed");
             order.setTotalPrice(subtotal);
