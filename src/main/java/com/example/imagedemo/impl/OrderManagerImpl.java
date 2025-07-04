@@ -90,7 +90,7 @@ public class OrderManagerImpl implements OrderValidation {
             }
         }
         logger.info("Database of products updated successfully");
-        logger.info("Clearing the cartitems for the user {}", u.getUsername());
+        logger.info("Clearing the cart items for the user {}", u.getUsername());
         for (CartOrderProductList items : itemsCart) {
             items.setOrder(order);
             items.setStatus("Placed");
@@ -121,9 +121,9 @@ public class OrderManagerImpl implements OrderValidation {
 
     @Override
     public ResponseDto<?> getOrderByCustomDate(int requestId, OrderDto request) {
-        if(request.getOrderId()==0 || request.getDuration()==0 || request.getUnit().isEmpty()){
+        if (request.getOrderId() == 0 || request.getDuration() == 0 || request.getUnit().isEmpty()) {
             logger.error("Please make a valid request");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(),requestId,"Please make a valid request provide the complete data",null);
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please make a valid request provide the complete data", null);
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
@@ -149,9 +149,9 @@ public class OrderManagerImpl implements OrderValidation {
 
     @Override
     public ResponseDto<?> getAllProductsOfOrder(int requestId, OrderDto request) throws Exception {
-        if(request.getOrderId()==0){
+        if (request.getOrderId() == 0) {
             logger.error("Please provide the order id");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide the order id",null);
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide the order id", null);
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
@@ -161,7 +161,7 @@ public class OrderManagerImpl implements OrderValidation {
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "No User is logged in", null);
         }
         OrderCart order = orderService.getOrderById(request.getOrderId());
-        if (order == null && request.getOrderId()!=0) {
+        if (order == null && request.getOrderId() != 0) {
             logger.error("Order id not found in the database ");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Order Id doesn't exists", null);
         }
@@ -185,9 +185,9 @@ public class OrderManagerImpl implements OrderValidation {
     @Override
     public ResponseDto<?> returnProductFromOrder(int requestId, OrderDto request) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        int pId=request.getProductId();
-        int orderId=request.getOrderId();
-        int quantity=request.getQuantity();
+        int pId = request.getProductId();
+        int orderId = request.getOrderId();
+        int quantity = request.getQuantity();
         Product p = productService.getSpecificProduct(pId);
         OrderCart order = orderService.getOrderById(orderId);
         logger.info("Requesting to return  product {} from the order {}", p.getName(), orderId);
@@ -211,32 +211,31 @@ public class OrderManagerImpl implements OrderValidation {
         productService.addProduct(p);
         orderService.saveOrder(order);
         logger.info("Returned request successfully completed");
-        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Return nequest of the product is Placed successfully", p.getName());
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Return request of the product is Placed successfully", p.getName());
     }
 
     @Override
     public ResponseDto<?> placeOrderWithCoupon(int requestId, OrderDto request) throws Exception {
         Pageable pageable = PageRequest.of(request.getPagingDto().getPage(), request.getPagingDto().getSize());
-        if(request.getCouponId()==0){
+        if (request.getCouponId() == 0) {
             logger.error("Please provide the coupon to get applied");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please provide the coupon to be applied",null);
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide the coupon to be applied", null);
         }
         Coupon coupon = couponService.findSpecificCoupon(request.getCouponId());
-        if(request.getCouponId()!=0 && coupon==null){
+        if (request.getCouponId() != 0 && coupon == null) {
             logger.error("Please provide a valid coupon");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Invalid coupon",null);
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Invalid coupon", null);
         }
         if (coupon == null) {
             logger.error("Please enter a valid coupon code");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please enter a valid coupon", null);
         }
         String category = coupon.getCategory();
-        boolean OfferApplied = false;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         users u = userService.getByUsername(auth.getName());
         Cart cart = u.getCart();
         OrderCart order = new OrderCart();
-        if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
+        if (auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User need to logged in to access the cart", null);
         }
@@ -261,9 +260,9 @@ public class OrderManagerImpl implements OrderValidation {
 
             List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
             double subtotal = 0;
-            double totalDiscount=0;
+            double totalDiscount = 0;
             billResponseDto billResponse = new billResponseDto();
-            double discountAmount=0;
+            double discountAmount = 0;
             for (CartOrderProductList x : itemsCart) {
                 logger.info("Offer is valid wait offer is applying and cart is getting updated");
                 for (CartOrderProductList items : itemsCart) {
@@ -289,18 +288,18 @@ public class OrderManagerImpl implements OrderValidation {
                     System.out.println("Discounted amount in price" + discountAmount);
                 }
             }
-            totalDiscount+=discountAmount;
+            totalDiscount += discountAmount;
             System.out.println(totalDiscount);
             order.setCart(cart);
             order.setStatus("Placed");
             order.setTotalPrice(subtotal);
-            order.setFinalAmount((subtotal-totalDiscount)+(subtotal-totalDiscount)*0.18);
+            order.setFinalAmount((subtotal - totalDiscount) + (subtotal - totalDiscount) * 0.18);
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setCoupon(coupon);
             order.setDiscountGivenInRs(totalDiscount);
             orderService.saveOrder(order);
-            logger.info("Order {} produced successfully for {} after apllying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
+            logger.info("Order {} produced successfully for {} after applying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
             billResponse.setItems(billItems);
             billResponse.setSubtotal(subtotal);
             billResponse.setDiscountedAmount(totalDiscount);
@@ -318,7 +317,7 @@ public class OrderManagerImpl implements OrderValidation {
                 }
             }
             logger.info("Product database updated successfully");
-            logger.info("Clearing the cartitems for the user {} as order placed", u.getUsername());
+            logger.info("Clearing the cart items for the user {} as order placed", u.getUsername());
             for (CartOrderProductList items : itemsCart) {
                 items.setOrder(order);
                 items.setStatus("Placed");
@@ -329,7 +328,7 @@ public class OrderManagerImpl implements OrderValidation {
             coupon.setCount(count - 1);
             couponService.saveCoupon(coupon);
             logger.info("Cart is cleared successfully");
-            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Order is placed after apllying coupon", billResponse);
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Order is placed after applying coupon", billResponse);
         }
 
         if (category.equals("Product") || category.equals("CustomProduct")) {
@@ -359,7 +358,7 @@ public class OrderManagerImpl implements OrderValidation {
                         discountAmount = coupon.getDiscountValue();
                     }
                     response.setDiscount(discountAmount);
-                    System.out.println("discount amount "+ discountAmount);
+                    System.out.println("discount amount " + discountAmount);
                     totalDiscount += discountAmount;
                     System.out.println("Total dis" + totalDiscount);
                 }
@@ -377,7 +376,7 @@ public class OrderManagerImpl implements OrderValidation {
             order.setCoupon(coupon);
             order.setDiscountGivenInRs(totalDiscount);
             orderService.saveOrder(order);
-            logger.info("Order {} produced successfully for {} after apllying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
+            logger.info("Order {} produced successfully for {} after applying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
             billResponse.setItems(billItems);
             billResponse.setItems(billItems);
             billResponse.setDiscountedAmount(totalDiscount);
@@ -394,7 +393,7 @@ public class OrderManagerImpl implements OrderValidation {
                 }
             }
             logger.info("Product database updated successfully");
-            logger.info("Clearing the cartitems for the user {} as order placed", u.getUsername());
+            logger.info("Clearing the cart items for the user {} as order placed", u.getUsername());
             for (CartOrderProductList items : itemsCart) {
                 items.setOrder(order);
                 items.setStatus("Placed");
