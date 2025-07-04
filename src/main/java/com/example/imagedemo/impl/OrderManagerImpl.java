@@ -255,7 +255,6 @@ public class OrderManagerImpl implements OrderValidation {
             double totalItemsPrice = 0;
             for (CartOrderProductList items : itemsCart) {
                 totalItemsPrice += items.getProduct().getPrice();
-                System.out.println(totalItemsPrice);
             }
 
             List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
@@ -275,21 +274,16 @@ public class OrderManagerImpl implements OrderValidation {
                 response.setQuantity(x.getQuantity());
                 response.setTotal(x.getProduct().getPrice() * x.getQuantity());
                 subtotal += response.getTotal();
-                System.out.println(subtotal);
                 billItems.add(response);
             }
             if (totalItemsPrice > coupon.getOfferAvailableOn()) {
                 if (coupon.getDiscountUnit().equals("Percentage")) {
-                    System.out.println(coupon.getDiscountValue());
                     discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
-                    System.out.println("Discount amount in percentage " + discountAmount);
                 } else if (coupon.getDiscountUnit().equals("Price")) {
                     discountAmount = coupon.getDiscountValue();
-                    System.out.println("Discounted amount in price" + discountAmount);
                 }
             }
             totalDiscount += discountAmount;
-            System.out.println(totalDiscount);
             order.setCart(cart);
             order.setStatus("Placed");
             order.setTotalPrice(subtotal);
@@ -351,20 +345,16 @@ public class OrderManagerImpl implements OrderValidation {
                 response.setQuantity(x.getQuantity());
                 response.setTotal(x.getProduct().getPrice() * x.getQuantity());
                 if (x.getProduct() == coupon.getProduct() && x.getQuantity() >= coupon.getOfferAvailableOn()) {
-                    System.out.println(coupon.getDiscountUnit() + coupon.getDescription());
                     if (coupon.getDiscountUnit().equals("Percentage")) {
                         discountAmount = (coupon.getDiscountValue() / 100) * response.getTotal();
                     } else if (coupon.getDiscountUnit().equals("Price")) {
                         discountAmount = coupon.getDiscountValue();
                     }
                     response.setDiscount(discountAmount);
-                    System.out.println("discount amount " + discountAmount);
                     totalDiscount += discountAmount;
-                    System.out.println("Total dis" + totalDiscount);
                 }
                 billItems.add(response);
                 subtotal = response.getTotal() - totalDiscount;
-                System.out.println(subtotal);
                 totalAmount += subtotal;
             }
             order.setCart(cart);

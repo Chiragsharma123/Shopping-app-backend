@@ -142,7 +142,6 @@ public class ProductsManagerImpl implements ProductsValidation {
     @Override
     public ResponseDto<?> fetchByCategory(productRequestDto request, int requestId) throws Exception {
         String category = request.getCategory();
-        System.out.println("category "+ category);
         if(category==null){
             logger.error("Please select a category");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please select a category",null);
