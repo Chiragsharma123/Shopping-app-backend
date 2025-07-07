@@ -137,7 +137,7 @@ public class ProductsManagerImpl implements ProductsValidation {
         }
         logger.error("Product {} not Exists", p.getName());
         return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Product doesn't exists in the database", null);
-    }
+    } 
 
     @Override
     public ResponseDto<?> fetchByCategory(productRequestDto request, int requestId) throws Exception {

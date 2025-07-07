@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface productRepo extends JpaRepository<Product, Integer> {
-    Page<Product> findByCategory(String category , Pageable pageable);
+    Page<Product> findByCategory(String category, Pageable pageable);
+
     Page<Product> findAll(Pageable pageable);
 }
