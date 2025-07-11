@@ -13,4 +13,8 @@ public interface productRepo extends JpaRepository<Product, Integer> {
     Page<Product> findByCategory(String category, Pageable pageable);
 
     Page<Product> findAll(Pageable pageable);
+
+    List<Product> findTop5ByOrderBySoldCountDesc();
+
+    List<Product> findTop5ByOrderBySoldCountAsc();
 }

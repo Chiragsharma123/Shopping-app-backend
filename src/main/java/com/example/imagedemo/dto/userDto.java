@@ -14,4 +14,5 @@ public class userDto {
     private String role;
     private String phoneNumber;
     private String Address;
+    private String pinCode;
 }

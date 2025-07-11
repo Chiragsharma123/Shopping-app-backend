@@ -22,4 +22,5 @@ public interface orderCartRepo extends JpaRepository<OrderCart, Integer> {
     Page<OrderCart> findByCartAndStatusAndCreatedAtAfter(Cart c,String status , Pageable pageable, LocalDateTime fromDate);
 
 
+    List<OrderCart> findByCreatedAtBetweenAndStatus(LocalDateTime startYOfYear, LocalDateTime endOfYear, String invoiced);
 }

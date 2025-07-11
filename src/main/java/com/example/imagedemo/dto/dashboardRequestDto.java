@@ -1,14 +1,14 @@
 package com.example.imagedemo.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class loginRequestDto {
-    private String username;
-    private String password;
+public class dashboardRequestDto {
+    private int year;
 }

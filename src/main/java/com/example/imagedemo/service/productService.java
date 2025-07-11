@@ -30,4 +30,12 @@ public class productService {
     public Page<Product> getByCategory(String category , Pageable pageable) {
         return pRepo.findByCategory(category , pageable);
     }
+
+    public List<Product> getHighestSellingProducts() {
+        return pRepo.findTop5ByOrderBySoldCountDesc();
+    }
+
+    public List<Product> getLowestSellingProducts() {
+        return pRepo.findTop5ByOrderBySoldCountAsc();
+    }
 }

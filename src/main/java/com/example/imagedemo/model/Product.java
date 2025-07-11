@@ -39,4 +39,5 @@ public class Product {
     @CsvBindByName
     @Transient
     private String imagePath;
+    private long soldCount;
 }

@@ -84,6 +84,7 @@ public class OrderManagerImpl implements OrderValidation {
         logger.info("Updating the quantity of all the products purchased in the product database");
         for (CartOrderProductList items : itemsCart) {
             Product p = items.getProduct();
+            p.setSoldCount(p.getSoldCount()+items.getQuantity());
             p.setQuantity(p.getQuantity() - items.getQuantity());
             if (p.getQuantity() <= 0) {
                 p.setStatus("Out of stock");
@@ -305,6 +306,7 @@ public class OrderManagerImpl implements OrderValidation {
             logger.info("Updating  quantity of all the products purchased in the product database");
             for (CartOrderProductList items : itemsCart) {
                 Product p = items.getProduct();
+                p.setSoldCount(p.getSoldCount()+items.getQuantity());
                 p.setQuantity(p.getQuantity() - items.getQuantity());
                 if (p.getQuantity() <= 0) {
                     p.setStatus("Out of stock");

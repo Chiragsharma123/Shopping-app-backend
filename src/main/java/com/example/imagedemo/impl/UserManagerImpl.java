@@ -2,8 +2,8 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.common.addressUsingKey;
 import com.example.imagedemo.dto.userDto;
-import com.example.imagedemo.model.CartOrderProductList;
 import com.example.imagedemo.service.*;
 import com.example.imagedemo.util.UserValidation;
 import com.example.imagedemo.dto.loginRequestDto;
@@ -30,7 +30,7 @@ import java.util.List;
 
 @Component
 public class UserManagerImpl implements UserValidation {
-    public static final Logger logger = LoggerFactory.getLogger(UserManagerImpl.class);
+   Logger logger = LoggerFactory.getLogger(UserManagerImpl.class);
     @Autowired
     private userService userService;
     @Autowired
@@ -45,7 +45,8 @@ public class UserManagerImpl implements UserValidation {
     private cartOrderProductService cartService;
     @Autowired
     private orderCartService orderService;
-
+    @Autowired
+    private addressUsingKey addressUsingKey;
     @Transactional
     @Override
     public ResponseDto<?> UserRegister(userDto user, int requestId) throws Exception {
@@ -62,7 +63,7 @@ public class UserManagerImpl implements UserValidation {
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide a valid", null);
             }
             if (userService.getByUsername(user.getUsername()) != null) {
-                logger.error("Registeration Failed: Username {} already exists", user.getUsername());
+                logger.error("Registration Failed: Username {} already exists", user.getUsername());
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
             }
             if (user.getPassword() != null) {
@@ -80,17 +81,20 @@ public class UserManagerImpl implements UserValidation {
             userToRegister.setUpdatedAt(LocalDateTime.now());
             if (user.getAddress() != null) {
                 userToRegister.setAddress(user.getAddress());
+            }else if(user.getPinCode()!=null && user.getAddress()==null){
+                String add = addressUsingKey.getAddressFromPin(user.getPinCode());
+                userToRegister.setAddress(add);
             }
             userService.registerUser(userToRegister);
             logger.info("user {} is updated successfully", userToRegister.getUsername());
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "user is updated successfully", userToRegister.getUsername());
         }
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            logger.error("Registeration failed : username is null or empty");
+            logger.error("Registration failed : username is null or empty");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User can not be blank", null);
         }
         if (user.getPassword() == null || user.getPassword().length() < 6) {
-            logger.error("Registeration Failed: Password can't be empty or null");
+            logger.error("Registration Failed: Password can't be empty or null");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Password must be of at least 6 characters", null);
         }
         if (user.getRole() == null || (!user.getRole().equalsIgnoreCase("user") && !user.getRole().equalsIgnoreCase("admin"))) {
@@ -98,7 +102,7 @@ public class UserManagerImpl implements UserValidation {
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Role Should be admin or user", null);
         }
         if (userService.getByUsername(user.getUsername()) != null) {
-            logger.error("Registeration Failed: Username {} already exists", user.getUsername());
+            logger.error("Registration Failed: Username {} already exists", user.getUsername());
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Username is already taken", null);
         }
 
@@ -110,7 +114,12 @@ public class UserManagerImpl implements UserValidation {
         u.setCreatedat(LocalDateTime.now());
         u.setUpdatedAt(LocalDateTime.now());
         u.setPhoneNumber(user.getPhoneNumber());
-        u.setAddress(user.getAddress());
+        if(user.getAddress()!=null) {
+            u.setAddress(user.getAddress());
+        }
+        else if(user.getAddress()==null && user.getPinCode()!=null){
+            u.setAddress(addressUsingKey.getAddressFromPin(user.getPinCode()));
+        }
         userService.registerUser(u);
         Cart cart = new Cart();
         cart.setStatus("Empty");

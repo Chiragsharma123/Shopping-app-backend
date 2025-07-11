@@ -35,4 +35,8 @@ public class orderCartService {
     public OrderCart getOrderById(int orderId) {
         return orderRepo.findById(orderId).orElse(null);
     }
+
+    public List<OrderCart> getAnnualOrders(LocalDateTime startYOfYear, LocalDateTime endOfYear, String invoiced) {
+        return orderRepo.findByCreatedAtBetweenAndStatus(startYOfYear,endOfYear,invoiced);
+    }
 }

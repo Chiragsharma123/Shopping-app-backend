@@ -5,6 +5,8 @@ import com.example.imagedemo.repository.userRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 
 @Service
 public class userService {
@@ -30,5 +32,9 @@ public class userService {
 
     public users getUserByPhone(String phoneNumber) {
         return userRepo.findByPhoneNumber(phoneNumber);
+    }
+
+    public List<users> getAllUsers() {
+        return userRepo.findAll();
     }
 }
