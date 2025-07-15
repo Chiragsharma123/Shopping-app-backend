@@ -40,7 +40,7 @@ public class sellerManagerImpl {
             logger.error("Registration Failed: Email can't be null or empty");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Email can't be null or empty", null);
         }
-        if (EmailValidator.getInstance().isValid(requestDto.getEmail())) {
+        if (!EmailValidator.getInstance().isValid(requestDto.getEmail())) {
             logger.error("Registration Failed: Invalid email format");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Invalid email format", null);
         }

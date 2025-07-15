@@ -29,7 +29,7 @@ public class securityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/category","/products/products", "/user/login","/encrypt").permitAll().requestMatchers("/user/logout", "/cart/productAdd", "/cart/productDelete","/cart/products", "/cart/quantity","/order/**", "coupon/fetchList","coupon/ApplyCoupon","coupon/removeCoupon").authenticated().requestMatchers("/products/upload","/products/UploadMultiple", "/products/delete", "/user/user/**", "/user/delete/**","coupon/create","/dashboard/").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/category","/products/products", "/user/login","/encrypt","/seller/register").permitAll().requestMatchers("/user/logout", "/cart/productAdd", "/cart/productDelete","/cart/products", "/cart/quantity","/order/**", "coupon/fetchList","coupon/ApplyCoupon","coupon/removeCoupon").authenticated().requestMatchers("/products/upload","/products/UploadMultiple", "/products/delete", "/user/user/**", "/user/delete/**","coupon/create","/dashboard/","/roles/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
