@@ -18,4 +18,5 @@ public class sellerRequestDto {
     private String status;
     private String brandName;
     private byte[] imageData;
+    private int roleId;
 }

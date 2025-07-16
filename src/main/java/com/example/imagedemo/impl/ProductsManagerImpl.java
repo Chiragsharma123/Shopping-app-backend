@@ -4,6 +4,8 @@ import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
 import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
+import com.example.imagedemo.model.Seller;
+import com.example.imagedemo.service.sellerService;
 import com.example.imagedemo.util.ProductsValidation;
 import com.example.imagedemo.model.Product;
 import com.example.imagedemo.service.productService;
@@ -30,12 +32,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ProductsManagerImpl implements ProductsValidation {
     Logger logger = LoggerFactory.getLogger(ProductsManagerImpl.class);
     @Autowired
     private productService productService;
+    @Autowired
+    private sellerService sellerService;
 
     @Override
     public ResponseDto<?> addProduct(List<productRequestDto> p, int requestId) throws Exception {
@@ -44,13 +50,24 @@ public class ProductsManagerImpl implements ProductsValidation {
             logger.error("Incomplete data");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please Provide the complete data", null);
         }
+        String role = auth.getAuthorities().stream()
+                .findFirst()
+                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .orElse("ROLE_USER");
+        Seller seller = null;
+        if("ROLE_SELLER".equalsIgnoreCase(role)){
+             seller = sellerService.findByEmail(auth.getName());
+        }
         List<String> productNames = new ArrayList<>();
         for (productRequestDto dto : p) {
-            Product productToAdd = productService.getSpecificProduct(dto.getPId());
-            if (productToAdd == null && dto.getPId() != 0) {
-                logger.error("Product for the {} id doesn't exits in the database", dto.getPId());
+            Product productToAdd=null;
+            if(dto.getPId()!=0) {
+                 productToAdd = productService.getSpecificProduct(dto.getPId());
+                if (productToAdd == null) {
+                    logger.error("Product for the {} id doesn't exits in the database", dto.getPId());
+                }
             }
-            if (productToAdd == null) {
+            if (dto.getPId()==0) {
                 Product product = new Product();
                 product.setName(dto.getName());
                 product.setDescription(dto.getDescription());
@@ -60,6 +77,23 @@ public class ProductsManagerImpl implements ProductsValidation {
                 product.setCreatedAt(LocalDateTime.now());
                 product.setPrice(dto.getPrice());
                 product.setBrand(dto.getBrand());
+                if("ROLE_SELLER".equalsIgnoreCase(role)){
+                    product.setSeller(seller);
+                    List<String> matchedPins = new ArrayList<>();
+                    Set<String>SellerCode = Arrays.stream(seller.getDelivery_pinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+                    String[] targetCodes = dto.getDeliveryPinCodes().split(",");
+                    for(String code: targetCodes){
+                        if(SellerCode.contains(code.trim())){
+                          matchedPins.add(code.trim());
+                        }
+                    }
+                    if(!matchedPins.isEmpty()){
+                        product.setDeliveryPinCodes(String.join("," , matchedPins));
+                    }
+                }
+                if("ROLE_ADMIN".equalsIgnoreCase(role)){
+                    product.setDeliveryPinCodes(dto.getDeliveryPinCodes());
+                }
                 if (dto.getQuantity() > 0) {
                     product.setStatus("Available");
                 } else {
@@ -69,35 +103,37 @@ public class ProductsManagerImpl implements ProductsValidation {
                 productNames.add(dto.getName());
                 productService.addProduct(product);
             }
-            if (dto.getName() != null) {
-                productToAdd.setName(dto.getName());
+            if(productToAdd!=null && dto.getPId()!=0) {
+                if (dto.getName() != null) {
+                    productToAdd.setName(dto.getName());
+                }
+                if (dto.getDescription() != null) {
+                    productToAdd.setDescription(dto.getDescription());
+                }
+                if (dto.getQuantity() != 0) {
+                    productToAdd.setQuantity(dto.getQuantity());
+                }
+                if (dto.getCategory() != null) {
+                    productToAdd.setCategory(dto.getCategory());
+                }
+                productToAdd.setUpdatedAt(LocalDateTime.now());
+                if (dto.getPrice() != 0) {
+                    productToAdd.setPrice(dto.getPrice());
+                }
+                if (dto.getBrand() != null) {
+                    productToAdd.setBrand(dto.getBrand());
+                }
+                if (dto.getQuantity() > 0) {
+                    productToAdd.setStatus("Available");
+                } else {
+                    productToAdd.setStatus("Unavailable");
+                }
+                if (dto.getImageData() != null) {
+                    productToAdd.setImageData(dto.getImageData());
+                }
+                productNames.add(dto.getName());
+                productService.addProduct(productToAdd);
             }
-            if (dto.getDescription() != null) {
-                productToAdd.setDescription(dto.getDescription());
-            }
-            if (dto.getQuantity() != 0) {
-                productToAdd.setQuantity(dto.getQuantity());
-            }
-            if (dto.getCategory() != null) {
-                productToAdd.setCategory(dto.getCategory());
-            }
-            productToAdd.setUpdatedAt(LocalDateTime.now());
-            if (dto.getPrice() != 0) {
-                productToAdd.setPrice(dto.getPrice());
-            }
-            if (dto.getBrand() != null) {
-                productToAdd.setBrand(dto.getBrand());
-            }
-            if (dto.getQuantity() > 0) {
-                productToAdd.setStatus("Available");
-            } else {
-                productToAdd.setStatus("Unavailable");
-            }
-            if (dto.getImageData() != null) {
-                productToAdd.setImageData(dto.getImageData());
-            }
-            productNames.add(dto.getName());
-            productService.addProduct(productToAdd);
         }
         logger.info("All products are added successfully");
         return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "Product Uploaded to website successfully", productNames);

@@ -4,6 +4,7 @@ import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
 import com.example.imagedemo.common.addressUsingKey;
 import com.example.imagedemo.dto.userDto;
+import com.example.imagedemo.model.Seller;
 import com.example.imagedemo.service.*;
 import com.example.imagedemo.util.UserValidation;
 import com.example.imagedemo.dto.loginRequestDto;
@@ -47,6 +48,8 @@ public class UserManagerImpl implements UserValidation {
     private orderCartService orderService;
     @Autowired
     private addressUsingKey addressUsingKey;
+    @Autowired
+    private sellerService sellerService;
     @Transactional
     @Override
     public ResponseDto<?> UserRegister(userDto user, int requestId) throws Exception {
@@ -163,6 +166,11 @@ public class UserManagerImpl implements UserValidation {
                     u.setStatus("Active");
                     userService.registerUser(u);
                 }
+                if("ROLE_SELLER".equalsIgnoreCase(role)){
+                    Seller seller = sellerService.findByEmail(User.getUsername());
+                    seller.setStatus("Active");
+                    sellerService.registerSeller(seller);
+                }
                 return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", User.getUsername());
             } else {
                 logger.error("Login failed: Invalid credentials for {}", User.getUsername());
@@ -181,19 +189,29 @@ public class UserManagerImpl implements UserValidation {
     public ResponseDto<?> logOutUser(HttpServletResponse response, int requestId) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         logger.info("User {} is trying to log out from the website", auth.getName());
-        System.out.println(auth.getName());
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("Logout attempt failed: No authenticated user found");
             return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value(), Status.UNAUTHORIZED.getStatusDescription(), requestId, "No user is currently logged in", null);
         }
+        String role = auth.getAuthorities().stream()
+                .findFirst()
+                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .orElse("ROLE_USER");
         String username = auth.getName();
-        if (userService.getByUsername(username) != null) {
+        if (userService.getByUsername(username) != null || sellerService.findByEmail(username)!=null) {
             ResponseCookie clearCookie = ResponseCookie.from("jwtToken", "").httpOnly(true).secure(false).sameSite("Lax").path("/").maxAge(0).build();
             SecurityContextHolder.clearContext();
             response.addHeader(HttpHeaders.SET_COOKIE, clearCookie.toString());
-            users u = userService.getByUsername(username);
-            u.setStatus("Inactive");
-            userService.registerUser(u);
+            if("ROLE_USER".equalsIgnoreCase(role)) {
+                users u = userService.getByUsername(username);
+                u.setStatus("Inactive");
+                userService.registerUser(u);
+            }
+            if("ROLE_SELLER".equalsIgnoreCase(role)){
+                Seller seller = sellerService.findByEmail(username);
+                seller.setStatus("Inactive");
+                sellerService.registerSeller(seller);
+            }
             logger.info("User {} logged out successfully", username);
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User Logged Out Successfully", username);
         } else {

@@ -5,7 +5,7 @@ import com.example.imagedemo.dto.OrderDto;
 import org.springframework.data.domain.Pageable;
 
 public interface OrderValidation {
-    ResponseDto<?> placeOrder(int requestId, Pageable pageable ) throws Exception;
+    ResponseDto<?> placeOrder(int requestId, OrderDto requestDto ) throws Exception;
 
     ResponseDto<?> getAllOrders(int requestId, Pageable pageable) throws Exception;
 

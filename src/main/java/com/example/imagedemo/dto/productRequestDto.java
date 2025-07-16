@@ -17,6 +17,6 @@ public class productRequestDto {
     private int quantity;
     private String brand;
     private byte[] imageData;
-
+    private String deliveryPinCodes;
     private PagingDto Paging;
 }

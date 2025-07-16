@@ -12,4 +12,8 @@ public class sellerService {
     public void registerSeller(Seller seller) {
        sellerRepo.save(seller);
     }
+
+    public Seller findByEmail(String name) {
+        return sellerRepo.findByEmail(name);
+    }
 }

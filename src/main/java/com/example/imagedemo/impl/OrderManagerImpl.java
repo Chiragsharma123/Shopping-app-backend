@@ -41,8 +41,9 @@ public class OrderManagerImpl implements OrderValidation {
     private couponService couponService;
 
     @Override
-    public ResponseDto<?> placeOrder(int requestId, Pageable pageable) throws Exception {
+    public ResponseDto<?> placeOrder(int requestId, OrderDto requestDto) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Pageable pageable = PageRequest.of(requestDto.getPagingDto().getPage(),requestDto.getPagingDto().getSize());
         logger.info("User {} is placing a order", auth.getName());
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");

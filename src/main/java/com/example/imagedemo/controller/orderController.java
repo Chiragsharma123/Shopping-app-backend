@@ -19,12 +19,9 @@ public class orderController {
     private OrderManagerImpl orderManager;
 
     @PostMapping("/placed")
-    public ResponseDto<?> placeOrder(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto P) {
+    public ResponseDto<?> placeOrder(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto orderDto) {
         try {
-            int page = P.getPage();
-            int size =P.getSize();
-            Pageable pageable = PageRequest.of(page, size);
-            return orderManager.placeOrder(requestId, pageable );
+            return orderManager.placeOrder(requestId, orderDto );
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
