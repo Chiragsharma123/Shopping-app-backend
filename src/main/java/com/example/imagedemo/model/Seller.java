@@ -28,4 +28,7 @@ public class Seller {
     private byte[] brandLogo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @ManyToOne
+    @JoinColumn(name = "roleId")
+    private Roles roles;
 }

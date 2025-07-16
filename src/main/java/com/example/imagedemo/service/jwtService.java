@@ -1,5 +1,6 @@
 package com.example.imagedemo.service;
 
+import com.example.imagedemo.model.Roles;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import io.jsonwebtoken.Claims;
@@ -21,7 +22,8 @@ public class jwtService {
 
     Map<String, Object> claims = new HashMap<>();
 
-    public String gettoken(String username) {
+    public String gettoken(String username , String role) {
+        claims.put("role", role);
         return Jwts.builder().setClaims(claims).setSubject(username).setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)).signWith(secretkey, SignatureAlgorithm.HS256).compact();
     }
 
@@ -51,4 +53,9 @@ public class jwtService {
         return Jwts.parserBuilder().setSigningKey(secretkey).build().parseClaimsJws(token).getBody();
 
     }
+    public String extractUserRole(String token) {
+        Claims claims = extractAllClaims(token);
+        return (String) claims.get("role"); // extract role claim
+    }
+
 }

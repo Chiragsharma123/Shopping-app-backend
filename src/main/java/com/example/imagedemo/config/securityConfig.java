@@ -1,12 +1,14 @@
 package com.example.imagedemo.config;
 
-import jakarta.servlet.http.HttpServletResponse;
+import com.example.imagedemo.service.MySellerService;
+import com.example.imagedemo.service.MyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -25,24 +27,37 @@ public class securityConfig {
     @Autowired
     private jwtFilter jwtFilter;
     @Autowired
-    private UserDetailsService userDetailService;
+    private MyUserService myUserService;
+    @Autowired
+    private MySellerService mySellerService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/category","/products/products", "/user/login","/encrypt","/seller/register").permitAll().requestMatchers("/user/logout", "/cart/productAdd", "/cart/productDelete","/cart/products", "/cart/quantity","/order/**", "coupon/fetchList","coupon/ApplyCoupon","coupon/removeCoupon").authenticated().requestMatchers("/products/upload","/products/UploadMultiple", "/products/delete", "/user/user/**", "/user/delete/**","coupon/create","/dashboard/","/roles/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/category","/products/products", "/user/login","/encrypt","/seller/register").permitAll().requestMatchers("/user/logout", "/cart/productAdd", "/cart/productDelete","/cart/products", "/cart/quantity","/order/**", "coupon/fetchList","coupon/ApplyCoupon","coupon/removeCoupon").authenticated().requestMatchers("/products/upload","/products/UploadMultiple", "/products/delete").hasAnyRole("ADMIN","SELLER").requestMatchers( "/user/user/**", "/user/delete/**","coupon/create","/dashboard/","/roles/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
+    public AuthenticationProvider userAuthenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailService);
+        provider.setUserDetailsService(myUserService);
         provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         return provider;
     }
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationProvider sellerAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(mySellerService);
+        provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
+        return provider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        builder.authenticationProvider(userAuthenticationProvider());
+        builder.authenticationProvider(sellerAuthenticationProvider());
+        return builder.build();
     }
 
     @Bean

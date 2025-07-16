@@ -40,4 +40,8 @@ public class Product {
     @Transient
     private String imagePath;
     private long soldCount;
+    @ManyToOne
+    @JoinColumn(name = "sellerId")
+    private Seller seller;
+    private String deliveryPinCodes;
 }

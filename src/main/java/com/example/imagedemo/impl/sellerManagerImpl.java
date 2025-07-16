@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,8 @@ public class sellerManagerImpl {
     Logger logger = LoggerFactory.getLogger(sellerManagerImpl.class);
     @Autowired
     private sellerService sellerService;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public ResponseDto<?> registerSeller(sellerRequestDto requestDto, int requestId) {
         logger.info("Registering user : {}", requestDto.getName());
@@ -46,7 +49,7 @@ public class sellerManagerImpl {
         }
         Seller seller = new Seller();
         seller.setName(requestDto.getName());
-        seller.setPassword(requestDto.getPassword());
+        seller.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         seller.setBrandName(requestDto.getBrandName());
         seller.setBrandLogo(requestDto.getImageData());
         seller.setAddress(requestDto.getAddress());

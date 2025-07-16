@@ -1,5 +1,6 @@
 package com.example.imagedemo.config;
 
+import com.example.imagedemo.service.MySellerService;
 import com.example.imagedemo.service.MyUserService;
 import com.example.imagedemo.service.jwtService;
 import jakarta.servlet.FilterChain;
@@ -30,6 +31,8 @@ public class jwtFilter extends OncePerRequestFilter {
     private jwtService jwtService;
     @Autowired
     private MyUserService userService;
+    @Autowired
+    private MySellerService sellerService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -46,9 +49,15 @@ public class jwtFilter extends OncePerRequestFilter {
             }
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userdetails = userService.loadUserByUsername(username);
-            if (jwtService.validateToken(token, userdetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userdetails, null, userdetails.getAuthorities());
+            UserDetails userDetails = null;
+            String role = jwtService.extractUserRole(token);
+            if ("ROLE_USER".equalsIgnoreCase(role)) {
+                userDetails = userService.loadUserByUsername(username);
+            } else if ("ROLE_SELLER".equalsIgnoreCase(role)) {
+                userDetails = sellerService.loadUserByUsername(username);
+            }
+            if (jwtService.validateToken(token, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }

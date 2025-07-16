@@ -53,7 +53,7 @@ public class UserManagerImpl implements UserValidation {
         logger.info("Registering user : {}", user.getUsername());
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || user.getId() != 0 || !auth.getPrincipal().equals("anonymousUser")) {
-            logger.error("Invalid request need to logout");
+            logger.error("Invalid request need to login");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Invalid request need to logout", null);
         }
         if (user.getId() != 0 && auth != null) {
@@ -149,14 +149,20 @@ public class UserManagerImpl implements UserValidation {
         }
         try {
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(User.getUsername(), User.getPassword()));
+            String role = auth.getAuthorities().stream()
+                    .findFirst()
+                    .map(grantedAuthority -> grantedAuthority.getAuthority())
+                    .orElse("ROLE_USER");
             if (auth.isAuthenticated()) {
-                String token = jwtservice.gettoken(User.getUsername());
+                String token = jwtservice.gettoken(User.getUsername() , role);
                 ResponseCookie loginCookie = ResponseCookie.from("jwtToken", token).httpOnly(true).secure(false).sameSite("Lax").path("/").maxAge(10 * 60 * 60).build();
                 response.addHeader(HttpHeaders.SET_COOKIE, loginCookie.toString());
-                logger.info("User {} logged in successfully", User.getUsername());
-                users u = userService.getByUsername(User.getUsername());
-                u.setStatus("Active");
-                userService.registerUser(u);
+                logger.info("{} {} logged in successfully",role, User.getUsername());
+                if("ROLE_USER".equalsIgnoreCase(role)) {
+                    users u = userService.getByUsername(User.getUsername());
+                    u.setStatus("Active");
+                    userService.registerUser(u);
+                }
                 return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", User.getUsername());
             } else {
                 logger.error("Login failed: Invalid credentials for {}", User.getUsername());

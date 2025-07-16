@@ -27,6 +27,8 @@ public class rolesManagerImpl implements rolesValidation {
             roles.setUpdatedAt(LocalDateTime.now());
             roles.setCreatedAt(LocalDateTime.now());
             rolesService.addRole(roles);
+            logger.info("New role is created to the database");
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"New role is created successfully",roles.getRoleName());
         }
         logger.info("Updating the role for the id {}" , requestDto.getId());
         Roles roles = rolesService.findSpecificRole(requestDto.getId());

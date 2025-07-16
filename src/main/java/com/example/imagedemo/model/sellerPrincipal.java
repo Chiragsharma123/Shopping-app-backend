@@ -2,9 +2,11 @@ package com.example.imagedemo.model;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class sellerPrincipal implements UserDetails {
@@ -16,17 +18,18 @@ public class sellerPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        String role = seller.getRoles().getRoleName().toUpperCase();
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     @Override
     public String getPassword() {
-        return "";
+        return seller.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return seller.getEmail();
     }
 
     @Override
