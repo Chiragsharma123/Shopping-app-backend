@@ -2,6 +2,7 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.service.cartOrderProductService;
 import com.example.imagedemo.service.cartUseService;
@@ -25,6 +26,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class CartManagerImpl implements CartValidation {
@@ -39,9 +42,16 @@ public class CartManagerImpl implements CartValidation {
     private cartUseService cartUseService;
 
     @Override
-    public ResponseDto<?> addProductToCart(int pid, String username, int quantity, int requestId) throws Exception {
+    public ResponseDto<?> addProductToCart(productRequestDto P, String username, int requestId) throws Exception {
         users user = userService.getByUsername(username);
+        int pid = P.getPId();
+        int quantity = P.getQuantity();
         Product p = productService.getSpecificProduct(pid);
+        Set<String> productCode = Arrays.stream(p.getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+        if(!productCode.contains(P.getDeliveryPinCodes().trim())){
+            logger.error("Product is not available for the provided pincode");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Product is not available at the provided pincode",null);
+        }
         if(pid!=0 && p == null ){
             logger.error("The Product doesn't exists in the database");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(),Status.NOT_FOUND.getStatusDescription(),requestId,"Product doesn't exists in the database",null);

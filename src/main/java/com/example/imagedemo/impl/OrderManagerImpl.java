@@ -23,6 +23,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class OrderManagerImpl implements OrderValidation {
@@ -62,12 +64,18 @@ public class OrderManagerImpl implements OrderValidation {
         }
         for (CartOrderProductList x : itemsCart) {
             billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
-            response.setName(x.getProduct().getName());
-            response.setPrice(x.getProduct().getPrice());
-            response.setQuantity(x.getQuantity());
-            response.setTotal(x.getProduct().getPrice() * x.getQuantity());
-            billItems.add(response);
-            subtotal += response.getTotal();
+            Set<String> productCode = Arrays.stream(x.getProduct().getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+            if(productCode.contains(requestDto.getPinCode().trim())) {
+                response.setName(x.getProduct().getName());
+                response.setPrice(x.getProduct().getPrice());
+                response.setQuantity(x.getQuantity());
+                response.setTotal(x.getProduct().getPrice() * x.getQuantity());
+                billItems.add(response);
+                subtotal += response.getTotal();
+            }
+            else{
+                logger.error("Product {} is not available in your locality",x.getProduct().getName());
+            }
         }
         order.setCart(cart);
         order.setStatus("Placed");
@@ -85,8 +93,11 @@ public class OrderManagerImpl implements OrderValidation {
         logger.info("Updating the quantity of all the products purchased in the product database");
         for (CartOrderProductList items : itemsCart) {
             Product p = items.getProduct();
-            p.setSoldCount(p.getSoldCount()+items.getQuantity());
-            p.setQuantity(p.getQuantity() - items.getQuantity());
+            Set<String>ProductCode = Arrays.stream(p.getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+            if(ProductCode.contains(requestDto.getPinCode().trim())) {
+                p.setSoldCount(p.getSoldCount() + items.getQuantity());
+                p.setQuantity(p.getQuantity() - items.getQuantity());
+            }
             if (p.getQuantity() <= 0) {
                 p.setStatus("Out of stock");
             }

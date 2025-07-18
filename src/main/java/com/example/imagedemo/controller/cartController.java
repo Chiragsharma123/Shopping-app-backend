@@ -34,7 +34,7 @@ public class cartController {
                 return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "you need to logged in for accessing the cart", null);
             }
             String username = ((UserDetails) auth.getPrincipal()).getUsername();
-            return cartManager.addProductToCart(P.getPId(), username, quantity, requestId);
+            return cartManager.addProductToCart(P, username, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

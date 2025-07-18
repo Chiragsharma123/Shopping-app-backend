@@ -1,10 +1,11 @@
 package com.example.imagedemo.util;
 
 import com.example.imagedemo.common.ResponseDto;
+import com.example.imagedemo.dto.productRequestDto;
 import org.springframework.data.domain.Pageable;
 
 public interface CartValidation {
-    ResponseDto<?> addProductToCart(int pid, String username, int quantity, int requestId) throws Exception;
+    ResponseDto<?> addProductToCart(productRequestDto P, String username, int requestId) throws Exception;
 
     ResponseDto<?> removeProductFromCart(int pid, int requestId) throws Exception;
 

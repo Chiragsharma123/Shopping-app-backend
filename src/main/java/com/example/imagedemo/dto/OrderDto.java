@@ -15,4 +15,5 @@ public class OrderDto {
     private long duration;
     private String unit;
     private int quantity;
+    private String pinCode;
 }
