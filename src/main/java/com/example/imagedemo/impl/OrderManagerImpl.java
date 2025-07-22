@@ -45,7 +45,7 @@ public class OrderManagerImpl implements OrderValidation {
     @Override
     public ResponseDto<?> placeOrder(int requestId, OrderDto requestDto) throws Exception {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Pageable pageable = PageRequest.of(requestDto.getPagingDto().getPage(),requestDto.getPagingDto().getSize());
+        Pageable pageable = PageRequest.of(requestDto.getPagingDto().getPage(), requestDto.getPagingDto().getSize());
         logger.info("User {} is placing a order", auth.getName());
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");
@@ -65,16 +65,15 @@ public class OrderManagerImpl implements OrderValidation {
         for (CartOrderProductList x : itemsCart) {
             billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
             Set<String> productCode = Arrays.stream(x.getProduct().getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
-            if(productCode.contains(requestDto.getPinCode().trim())) {
+            if (productCode.contains(requestDto.getPinCode().trim())) {
                 response.setName(x.getProduct().getName());
                 response.setPrice(x.getProduct().getPrice());
                 response.setQuantity(x.getQuantity());
                 response.setTotal(x.getProduct().getPrice() * x.getQuantity());
                 billItems.add(response);
                 subtotal += response.getTotal();
-            }
-            else{
-                logger.error("Product {} is not available in your locality",x.getProduct().getName());
+            } else {
+                logger.error("Product {} is not available in your locality", x.getProduct().getName());
             }
         }
         order.setCart(cart);
@@ -83,6 +82,7 @@ public class OrderManagerImpl implements OrderValidation {
         order.setFinalAmount(subtotal + subtotal * 0.18);
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
+        order.setAddress(requestDto.getAddress());
         orderService.saveOrder(order);
         logger.info("Order {} produced successfully for {}", order.getOrderId(), u.getUsername());
         billResponse.setItems(billItems);
@@ -93,8 +93,8 @@ public class OrderManagerImpl implements OrderValidation {
         logger.info("Updating the quantity of all the products purchased in the product database");
         for (CartOrderProductList items : itemsCart) {
             Product p = items.getProduct();
-            Set<String>ProductCode = Arrays.stream(p.getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
-            if(ProductCode.contains(requestDto.getPinCode().trim())) {
+            Set<String> ProductCode = Arrays.stream(p.getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+            if (ProductCode.contains(requestDto.getPinCode().trim())) {
                 p.setSoldCount(p.getSoldCount() + items.getQuantity());
                 p.setQuantity(p.getQuantity() - items.getQuantity());
             }
@@ -107,6 +107,7 @@ public class OrderManagerImpl implements OrderValidation {
         for (CartOrderProductList items : itemsCart) {
             items.setOrder(order);
             items.setStatus("Placed");
+            items.setUpdatedAt(LocalDateTime.now());
             cartService.additem(items);
         }
         logger.info("Cart is cleared");
@@ -214,6 +215,7 @@ public class OrderManagerImpl implements OrderValidation {
         item.setStatus("Returned");
         cartService.additem(item);
         p.setQuantity(p.getQuantity() + quantity);
+        p.setReturnCount(p.getReturnCount()+quantity);
         double refundedAmount = p.getPrice() * quantity - order.getDiscountGivenInRs();
         if (refundedAmount <= 0) {
             refundedAmount = p.getPrice() * quantity;
@@ -304,6 +306,7 @@ public class OrderManagerImpl implements OrderValidation {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setCoupon(coupon);
+            order.setAddress(request.getAddress());
             order.setDiscountGivenInRs(totalDiscount);
             orderService.saveOrder(order);
             logger.info("Order {} produced successfully for {} after applying the coupon {}", order.getOrderId(), u.getUsername(), coupon.getCode());
@@ -318,7 +321,7 @@ public class OrderManagerImpl implements OrderValidation {
             logger.info("Updating  quantity of all the products purchased in the product database");
             for (CartOrderProductList items : itemsCart) {
                 Product p = items.getProduct();
-                p.setSoldCount(p.getSoldCount()+items.getQuantity());
+                p.setSoldCount(p.getSoldCount() + items.getQuantity());
                 p.setQuantity(p.getQuantity() - items.getQuantity());
                 if (p.getQuantity() <= 0) {
                     p.setStatus("Out of stock");

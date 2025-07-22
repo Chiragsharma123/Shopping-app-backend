@@ -11,4 +11,6 @@ import java.util.List;
 @NoArgsConstructor
 public class dashboardRequestDto {
     private int year;
+    private int duration;
+    private String unit;
 }

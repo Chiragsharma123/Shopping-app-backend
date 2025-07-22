@@ -16,4 +16,5 @@ public class OrderDto {
     private String unit;
     private int quantity;
     private String pinCode;
+    private String address;
 }

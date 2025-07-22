@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 public class cartOrderProductService {
     @Autowired
@@ -46,5 +49,9 @@ public class cartOrderProductService {
 
     public Page<CartOrderProductList> getAllItemsOfOrder(OrderCart order, Pageable pageable) {
         return cartRepo.findByOrder(order, pageable);
+    }
+
+    public List<CartOrderProductList> getAllItems(int id, List<String> statuses, LocalDateTime fromDate) {
+        return cartRepo.findBySellerIdAndStatusInAndUpdatedAtAfter(id , statuses , fromDate);
     }
 }

@@ -32,4 +32,5 @@ public class OrderCart {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private double discountGivenInRs;
+    private String address;
 }

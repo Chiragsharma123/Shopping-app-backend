@@ -38,4 +38,8 @@ public class CartOrderProductList {
     private OrderCart order;
 
     private String status;
+
+    @ManyToOne
+    @JoinColumn(name = "sellerId")
+    private Seller seller;
 }

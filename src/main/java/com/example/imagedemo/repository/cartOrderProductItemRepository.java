@@ -11,6 +11,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Repository
 public interface cartOrderProductItemRepository extends JpaRepository<CartOrderProductList, Integer> {
     Page<CartOrderProductList> findAllByCartAndStatus(Cart cart, Pageable pageable, String status);
@@ -22,4 +25,6 @@ public interface cartOrderProductItemRepository extends JpaRepository<CartOrderP
     Page<CartOrderProductList> findByOrder(OrderCart order, Pageable pageable);
 
     CartOrderProductList findByCartAndProductAndOrder(Cart c, Product p, OrderCart order);
+
+    List<CartOrderProductList> findBySellerIdAndStatusInAndUpdatedAtAfter(int id, List<String> statuses, LocalDateTime fromDate);
 }

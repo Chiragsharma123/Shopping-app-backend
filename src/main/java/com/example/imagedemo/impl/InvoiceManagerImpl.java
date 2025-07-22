@@ -126,7 +126,7 @@ public class InvoiceManagerImpl implements InvoiceValidation {
 
         document.add(new Paragraph("Customer name: " + user.getUsername()));
         document.add(new Paragraph("Phone: " + user.getPhoneNumber()));
-        document.add(new Paragraph("Address: " + user.getAddress()));
+        document.add(new Paragraph("Address: " + order.getAddress()));
         document.add(new Paragraph("Order Date: " + today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
         document.add(new Paragraph("\n"));
 

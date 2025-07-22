@@ -44,4 +44,6 @@ public class Product {
     @JoinColumn(name = "sellerId")
     private Seller seller;
     private String deliveryPinCodes;
+    private long costPrice;
+    private long returnCount;
 }

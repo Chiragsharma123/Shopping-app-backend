@@ -14,4 +14,8 @@ public class dashboardResponseDto {
     private long TotalProfile;
     private List<String>HighestSellingProducts;
     private List<String>LeastSellingProducts;
+    private double CurrentMonthSale;
+    private double Profit ;
+    private double Loss;
+    private List<String>MaximumReturningProducts;
 }

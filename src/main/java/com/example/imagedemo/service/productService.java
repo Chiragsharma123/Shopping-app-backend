@@ -5,6 +5,7 @@ import com.example.imagedemo.repository.productRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,5 +38,13 @@ public class productService {
 
     public List<Product> getLowestSellingProducts() {
         return pRepo.findTop5ByOrderBySoldCountAsc();
+    }
+
+    public List<Product> getHighestSellingProductOfSeller(int sellerId) {
+        return pRepo.findTop5BySellerIdOrderBySoldCountDesc(sellerId);
+    }
+
+    public List<Product> getMaximumReturnedProduct(int id) {
+        return pRepo.findTop5BySellerIdOrderByReturnCountDesc(id);
     }
 }
