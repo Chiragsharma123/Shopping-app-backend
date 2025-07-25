@@ -68,7 +68,7 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfOrder(order, pageable);
         if (itemsCart.isEmpty() || order.getStatus().equals("Invoiced") || order.getStatus().equals("Inactive")) {
             logger.error("There is no product in the order {} so invoice can't be generated", orderId);
-            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No itmes is placed in the order", null);
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No items is placed in the order", null);
         }
         List<String>ProductsName = new ArrayList<>();
         double discount = 0;
