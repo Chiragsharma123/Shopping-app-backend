@@ -18,5 +18,6 @@ public class productRequestDto {
     private String brand;
     private byte[] imageData;
     private String deliveryPinCodes;
+    private long costPrice;
     private PagingDto Paging;
 }

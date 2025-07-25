@@ -75,6 +75,7 @@ public class ProductsManagerImpl implements ProductsValidation {
                 product.setCreatedAt(LocalDateTime.now());
                 product.setPrice(dto.getPrice());
                 product.setBrand(dto.getBrand());
+                product.setCostPrice(dto.getCostPrice());
                 if("ROLE_SELLER".equalsIgnoreCase(role)){
                     product.setSeller(seller);
                     List<String> matchedPins = new ArrayList<>();

@@ -66,6 +66,7 @@ public class CartManagerImpl implements CartValidation {
                 itemsCart.setQuantity(quantity);
                 itemsCart.setCreatedAt(LocalDateTime.now());
                 itemsCart.setUpdatedAt(LocalDateTime.now());
+                itemsCart.setSeller(p.getSeller());
                 itemsCart.setStatus("Active");
                 cartService.additem(itemsCart);
                 logger.info("Item added to cart successfully");
