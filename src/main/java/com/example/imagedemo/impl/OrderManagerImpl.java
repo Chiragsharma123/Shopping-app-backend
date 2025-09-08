@@ -101,7 +101,7 @@ public class OrderManagerImpl implements OrderValidation {
             if (p.getQuantity() <= 0) {
                 p.setStatus("Out of stock");
             }
-        }
+        }                                                                                                                                                                                                                                   
         logger.info("Database of products updated successfully");
         logger.info("Clearing the cart items for the user {}", u.getUsername());
         for (CartOrderProductList items : itemsCart) {
@@ -215,7 +215,7 @@ public class OrderManagerImpl implements OrderValidation {
         item.setStatus("Returned");
         cartService.additem(item);
         p.setQuantity(p.getQuantity() + quantity);
-        p.setReturnCount(p.getReturnCount()+quantity);
+        p.setReturnCount(p.getReturnCount() + quantity);
         double refundedAmount = p.getPrice() * quantity - order.getDiscountGivenInRs();
         if (refundedAmount <= 0) {
             refundedAmount = p.getPrice() * quantity;

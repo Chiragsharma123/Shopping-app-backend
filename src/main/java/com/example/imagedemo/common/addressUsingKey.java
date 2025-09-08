@@ -16,10 +16,7 @@ public class addressUsingKey {
         try {
             String baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
 
-            String url = UriComponentsBuilder.fromHttpUrl(baseUrl)
-                    .queryParam("address", pinCode + ", India")
-                    .queryParam("key", googleApiKey)
-                    .toUriString();
+            String url = UriComponentsBuilder.fromHttpUrl(baseUrl).queryParam("address", pinCode + ", India").queryParam("key", googleApiKey).toUriString();
 
             RestTemplate restTemplate = new RestTemplate();
             String response = restTemplate.getForObject(url, String.class);

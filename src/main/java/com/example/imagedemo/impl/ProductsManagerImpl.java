@@ -27,10 +27,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -48,24 +45,21 @@ public class ProductsManagerImpl implements ProductsValidation {
             logger.error("Incomplete data");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please Provide the complete data", null);
         }
-        String role = auth.getAuthorities().stream()
-                .findFirst()
-                .map(grantedAuthority -> grantedAuthority.getAuthority())
-                .orElse("ROLE_USER");
+        String role = auth.getAuthorities().stream().findFirst().map(grantedAuthority -> grantedAuthority.getAuthority()).orElse("ROLE_USER");
         Seller seller = null;
-        if("ROLE_SELLER".equalsIgnoreCase(role)){
-             seller = sellerService.findByEmail(auth.getName());
+        if ("ROLE_SELLER".equalsIgnoreCase(role)) {
+            seller = sellerService.findByEmail(auth.getName());
         }
         List<String> productNames = new ArrayList<>();
         for (productRequestDto dto : p) {
-            Product productToAdd=null;
-            if(dto.getPId()!=0) {
-                 productToAdd = productService.getSpecificProduct(dto.getPId());
+            Product productToAdd = null;
+            if (dto.getPId() != 0) {
+                productToAdd = productService.getSpecificProduct(dto.getPId());
                 if (productToAdd == null) {
                     logger.error("Product for the {} id doesn't exits in the database", dto.getPId());
                 }
             }
-            if (dto.getPId()==0) {
+            if (dto.getPId() == 0) {
                 Product product = new Product();
                 product.setName(dto.getName());
                 product.setDescription(dto.getDescription());
@@ -76,21 +70,21 @@ public class ProductsManagerImpl implements ProductsValidation {
                 product.setPrice(dto.getPrice());
                 product.setBrand(dto.getBrand());
                 product.setCostPrice(dto.getCostPrice());
-                if("ROLE_SELLER".equalsIgnoreCase(role)){
+                if ("ROLE_SELLER".equalsIgnoreCase(role)) {
                     product.setSeller(seller);
                     List<String> matchedPins = new ArrayList<>();
-                    Set<String>SellerCode = Arrays.stream(seller.getDelivery_pinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
+                    Set<String> SellerCode = Arrays.stream(seller.getDelivery_pinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
                     String[] targetCodes = dto.getDeliveryPinCodes().split(",");
-                    for(String code: targetCodes){
-                        if(SellerCode.contains(code.trim())){
-                          matchedPins.add(code.trim());
+                    for (String code : targetCodes) {
+                        if (SellerCode.contains(code.trim())) {
+                            matchedPins.add(code.trim());
                         }
                     }
-                    if(!matchedPins.isEmpty()){
-                        product.setDeliveryPinCodes(String.join("," , matchedPins));
+                    if (!matchedPins.isEmpty()) {
+                        product.setDeliveryPinCodes(String.join(",", matchedPins));
                     }
                 }
-                if("ROLE_ADMIN".equalsIgnoreCase(role)){
+                if ("ROLE_ADMIN".equalsIgnoreCase(role)) {
                     product.setDeliveryPinCodes(dto.getDeliveryPinCodes());
                 }
                 if (dto.getQuantity() > 0) {
@@ -102,7 +96,7 @@ public class ProductsManagerImpl implements ProductsValidation {
                 productNames.add(dto.getName());
                 productService.addProduct(product);
             }
-            if(productToAdd!=null && dto.getPId()!=0) {
+            if (productToAdd != null && dto.getPId() != 0) {
                 if (dto.getName() != null) {
                     productToAdd.setName(dto.getName());
                 }
@@ -146,8 +140,9 @@ public class ProductsManagerImpl implements ProductsValidation {
         if (!response.isEmpty()) {
             for (Product p : response) {
                 productResponseDto items = new productResponseDto();
+                items.setId(p.getPId());
                 items.setName(p.getName());
-                items.setImageBase64(Arrays.toString(p.getImageData()));
+                items.setImageBase64(Base64.getEncoder().encodeToString(p.getImageData()));
                 items.setPrice(p.getPrice());
                 items.setDescription(p.getDescription());
                 items.setCategory(p.getCategory());
@@ -172,14 +167,14 @@ public class ProductsManagerImpl implements ProductsValidation {
         }
         logger.error("Product {} not Exists", p.getName());
         return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Product doesn't exists in the database", null);
-    } 
+    }
 
     @Override
     public ResponseDto<?> fetchByCategory(productRequestDto request, int requestId) throws Exception {
         String category = request.getCategory();
-        if(category==null){
+        if (category == null) {
             logger.error("Please select a category");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Please select a category",null);
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please select a category", null);
         }
         Pageable pageable = PageRequest.of(request.getPaging().getPage(), request.getPaging().getSize());
         logger.info("Fetching all products of {}", category);
@@ -245,5 +240,22 @@ public class ProductsManagerImpl implements ProductsValidation {
         }
         logger.info("All the products from the csv file are added successfully");
         return new ResponseDto<>(Status.CREATED.getStatusCode().value(), Status.CREATED.getStatusDescription(), requestId, "All product added", pName);
+    }
+
+    @Override
+    public ResponseDto<?> getProductDetails(int requestId, int pId) {
+        logger.info("Showing the details of a specific product with id : {}",pId);
+        productResponseDto product = new productResponseDto();
+        Product p = productService.getSpecificProduct(pId);
+        if(p==null && pId!=0){
+            logger.error("The product id doesn't exists in the database");
+            return  new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId , "Invalid product id" , null);
+        }
+        product.setName(p.getName());
+        product.setImageBase64(Base64.getEncoder().encodeToString(p.getImageData()));
+        product.setPrice(p.getPrice());
+        product.setDescription(p.getDescription());
+        logger.info("Details of the product {} is fetched successfully" , p.getName());
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId , "Products details fetched successfully" , product);
     }
 }

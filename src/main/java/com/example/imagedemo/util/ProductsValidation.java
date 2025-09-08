@@ -21,4 +21,6 @@ public interface ProductsValidation {
     ResponseDto<?> updateQuantity(int pId, int quantity, int requestId) throws Exception;
 
     ResponseDto<?> addMulitpleProduct(MultipartFile file , int requestId)throws Exception;
+
+    ResponseDto<?> getProductDetails(int requestId, int pId);
 }

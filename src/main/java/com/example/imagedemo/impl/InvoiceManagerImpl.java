@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -48,11 +49,11 @@ public class InvoiceManagerImpl implements InvoiceValidation {
     private qrCodeGenerator qrCodeGenerator;
 
     @Override
-    public ResponseDto<?> getInvoicePdfGenerator(InvoiceRequestDto request, int requestId , String PDF_DIR) throws Exception {
+    public ResponseDto<?> getInvoicePdfGenerator(InvoiceRequestDto request, int requestId, String PDF_DIR) throws Exception {
         int page = request.getPaging().getPage();
         int size = request.getPaging().getSize();
-        int orderId=request.getOrderId();
-        Pageable pageable = PageRequest.of(page , size);
+        int orderId = request.getOrderId();
+        Pageable pageable = PageRequest.of(page, size);
         String filename = "invoice_order_" + orderId + ".pdf";
         String filePath = Paths.get(PDF_DIR, filename).toString();
         logger.info("Generating invoice for the order {}", orderId);
@@ -65,14 +66,14 @@ public class InvoiceManagerImpl implements InvoiceValidation {
             logger.error("There is no product in the order {} so invoice can't be generated", orderId);
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No items is placed in the order", null);
         }
-        List<String>ProductsName = new ArrayList<>();
+        List<String> ProductsName = new ArrayList<>();
         double discount = 0;
         if (coupon != null) {
             discount = order.getDiscountGivenInRs();
         }
         int count = 1;
         double subtotal = 0;
-        for(CartOrderProductList items:itemsCart){
+        for (CartOrderProductList items : itemsCart) {
             Product p = items.getProduct();
             ProductsName.add(p.getName());
             double itemTotal = items.getQuantity() * p.getPrice();
@@ -91,20 +92,15 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         logo.scaleToFit(50, 33);
         logo.setAutoScale(false);
 
-        Table headerTable = new Table(UnitValue.createPercentArray(new float[]{60,30,10})).useAllAvailableWidth().setMarginBottom(20);
+        Table headerTable = new Table(UnitValue.createPercentArray(new float[]{60, 30, 10})).useAllAvailableWidth().setMarginBottom(20);
 
         Cell titleCell = new Cell().add(new Paragraph("Ecommerce_INVOICE").setFont(PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD)).setFontSize(18).setTextAlignment(TextAlignment.LEFT)).setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
 
         Cell logoCell = new Cell().add(logo).setTextAlignment(TextAlignment.RIGHT).setPadding(0).setMarginRight(0).setBorder(Border.NO_BORDER).setVerticalAlignment(VerticalAlignment.MIDDLE);
 
-        String qrText = String.format(
-                "Customer: %s\nProducts: %s\nTotal Amount: Rs %.2f",
-                user.getUsername(),
-                ProductsName,
-                total
-        );
-        String fileName= request.getOrderId() + "qr";
-        String QrPath = qrCodeGenerator.generateQRCodeImage(qrText, fileName,50, 33);
+        String qrText = String.format("Customer: %s\nProducts: %s\nTotal Amount: Rs %.2f", user.getUsername(), ProductsName, total);
+        String fileName = request.getOrderId() + "qr";
+        String QrPath = qrCodeGenerator.generateQRCodeImage(qrText, fileName, 50, 33);
         ImageData QrData = ImageDataFactory.create(QrPath);
         Image qr = new Image(QrData);
         logo.scaleToFit(50, 33);
@@ -132,7 +128,7 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         table.addHeaderCell("Qty");
         table.addHeaderCell("Unit Price");
         table.addHeaderCell("Subtotal");
-        
+
         for (CartOrderProductList items : itemsCart) {
             if (items.getOrder().getOrderId() == orderId) {
                 Product p = items.getProduct();
@@ -154,7 +150,7 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         if (discount != 0) {
             document.add(new Paragraph("Discount : Rs " + String.format("%.2f", discount)));
         }
-       document.add(new Paragraph("Grand Total: Rs " + String.format("%.2f", total)).setBold().setFontSize(14));
+        document.add(new Paragraph("Grand Total: Rs " + String.format("%.2f", total)).setBold().setFontSize(14));
         document.add(new Paragraph("\n"));
 
         String SignaturePath = "D:\\Ecommerce\\imagedemo\\src\\main\\resources\\static\\myshop_signature_resized.png";

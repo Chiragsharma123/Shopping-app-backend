@@ -54,7 +54,7 @@ public class jwtFilter extends OncePerRequestFilter {
             if ("ROLE_USER".equalsIgnoreCase(role)) {
                 userDetails = userService.loadUserByUsername(username);
             } else if ("ROLE_ADMIN".equalsIgnoreCase(role)) {
-                userDetails=userService.loadUserByUsername(username);
+                userDetails = userService.loadUserByUsername(username);
             } else if ("ROLE_SELLER".equalsIgnoreCase(role)) {
                 userDetails = sellerService.loadUserByUsername(username);
             }

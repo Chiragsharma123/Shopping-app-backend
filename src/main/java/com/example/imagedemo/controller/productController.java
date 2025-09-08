@@ -45,11 +45,22 @@ public class productController {
     }
 
     @GetMapping("/products")
-    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto P) {
+    public ResponseDto<?> getAllProducts(@RequestHeader("Request-id") int requestId,  @RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size ){
         try {
-            Pageable pageable = PageRequest.of(P.getPage(), P.getSize());
+
+            Pageable pageable = PageRequest.of(page, size);
             return productsManager.getAllProducts(requestId, pageable);
         } catch (Exception e) {
+            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
+        }
+    }
+
+    @GetMapping("/{p_id}")
+    public ResponseDto<?>getProductDetails(@RequestHeader("Request-id") int requestId, @PathVariable Integer p_id){
+        try{
+            return  productsManager.getProductDetails(requestId , p_id);
+        }catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
