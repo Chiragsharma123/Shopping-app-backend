@@ -45,7 +45,7 @@ public class usersController {
         }
     }
 
-    @PostMapping("/logout")
+    @PostMapping("/signout")
     public ResponseDto<?> logoutUser(HttpServletResponse httpServletResponse, @RequestHeader("Request-id") int requestId) {
         try {
             return userManager.logOutUser(httpServletResponse, requestId);
@@ -61,6 +61,15 @@ public class usersController {
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
+    }
+
+    @GetMapping("/checkUser")
+    public ResponseDto<?> checkUser(@RequestHeader("Request-id") int requestId){
+    try{
+        return userManager.checkUser(requestId);
+    }catch (Exception e) {
+        return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
+    }
     }
 
 }

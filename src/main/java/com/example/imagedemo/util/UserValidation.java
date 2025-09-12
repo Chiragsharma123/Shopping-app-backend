@@ -15,4 +15,5 @@ public interface UserValidation {
 
     ResponseDto<?> deleteUser(userDto request, int requestId) throws Exception;
 
+    ResponseDto<?> checkUser(int requestId);
 }

@@ -5,8 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class EncryptedDto {
-    private String payload;
+@NoArgsConstructor
+public class loginResponseDto {
+    private String username;
+    private String role;
+    private String token;
 }

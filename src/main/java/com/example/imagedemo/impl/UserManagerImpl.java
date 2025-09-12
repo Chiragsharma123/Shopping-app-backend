@@ -3,6 +3,7 @@ package com.example.imagedemo.impl;
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
 import com.example.imagedemo.common.addressUsingKey;
+import com.example.imagedemo.dto.loginResponseDto;
 import com.example.imagedemo.dto.userDto;
 import com.example.imagedemo.model.Seller;
 import com.example.imagedemo.service.*;
@@ -154,7 +155,7 @@ public class UserManagerImpl implements UserValidation {
             Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(User.getUsername(), User.getPassword()));
             String role = auth.getAuthorities().stream()
                     .findFirst()
-                    .map(grantedAuthority -> grantedAuthority.getAuthority())
+                    .map(                                                                                                                             grantedAuthority -> grantedAuthority.getAuthority())
                     .orElse("ROLE_USER");
             if (auth.isAuthenticated()) {
                 String token = jwtservice.gettoken(User.getUsername() , role);
@@ -171,7 +172,11 @@ public class UserManagerImpl implements UserValidation {
                     seller.setStatus("Active");
                     sellerService.registerSeller(seller);
                 }
-                return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", User.getUsername());
+                loginResponseDto loginResponseDto = new loginResponseDto();
+                loginResponseDto.setUsername(User.getUsername());
+                loginResponseDto.setRole(role);
+                loginResponseDto.setToken(token);
+                return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", loginResponseDto);
             } else {
                 logger.error("Login failed: Invalid credentials for {}", User.getUsername());
                 return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value(), Status.UNAUTHORIZED.getStatusDescription(), requestId, "Invalid credentials", null);
@@ -244,6 +249,16 @@ public class UserManagerImpl implements UserValidation {
         }
         logger.error("User {} doesn't exists", u.getUsername());
         return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User doesn't found in the database", null);
+    }
+
+    @Override
+    public ResponseDto<?> checkUser(int requestId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth.getName() == null || !auth.getPrincipal().equals("anonymousUser")) {
+            logger.info("User is logged in");
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User Access is valid", auth.getName());
+        }
+        return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value() , Status.UNAUTHORIZED.getStatusDescription(), requestId , "User is invalid" , null);
     }
 
 }
