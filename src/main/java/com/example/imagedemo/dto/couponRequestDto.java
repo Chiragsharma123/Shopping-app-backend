@@ -10,7 +10,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class couponRequestDto {
-    private int cId;
+    private int couponId;
+
+//    public void setCId(int cId) {
+//        this.cId = cId;
+//    }
+
     private String code;
     private String category;
     private String description;

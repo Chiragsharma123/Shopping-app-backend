@@ -53,13 +53,13 @@ public class ProductsManagerImpl implements ProductsValidation {
         List<String> productNames = new ArrayList<>();
         for (productRequestDto dto : p) {
             Product productToAdd = null;
-            if (dto.getPId() != 0) {
-                productToAdd = productService.getSpecificProduct(dto.getPId());
+            if (dto.getProductId() != 0) {
+                productToAdd = productService.getSpecificProduct(dto.getProductId());
                 if (productToAdd == null) {
-                    logger.error("Product for the {} id doesn't exits in the database", dto.getPId());
+                    logger.error("Product for the {} id doesn't exits in the database", dto.getProductId());
                 }
             }
-            if (dto.getPId() == 0) {
+            if (dto.getProductId()== 0) {
                 Product product = new Product();
                 product.setName(dto.getName());
                 product.setDescription(dto.getDescription());
@@ -96,7 +96,7 @@ public class ProductsManagerImpl implements ProductsValidation {
                 productNames.add(dto.getName());
                 productService.addProduct(product);
             }
-            if (productToAdd != null && dto.getPId() != 0) {
+            if (productToAdd != null && dto.getProductId() != 0) {
                 if (dto.getName() != null) {
                     productToAdd.setName(dto.getName());
                 }
@@ -253,6 +253,7 @@ public class ProductsManagerImpl implements ProductsValidation {
         }
         product.setName(p.getName());
         product.setImageBase64(Base64.getEncoder().encodeToString(p.getImageData()));
+        product.setId(pId);
         product.setPrice(p.getPrice());
         product.setDescription(p.getDescription());
         logger.info("Details of the product {} is fetched successfully" , p.getName());

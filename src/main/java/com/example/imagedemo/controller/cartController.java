@@ -41,21 +41,19 @@ public class cartController {
         }
     }
 
-    @DeleteMapping("/productDelete")
-    public ResponseDto<?> removeProductFromCart(@RequestBody productRequestDto P, @RequestHeader("Request-id") int requestId) {
+    @DeleteMapping("/productDelete/{PId}")
+    public ResponseDto<?> removeProductFromCart(@PathVariable int PId, @RequestHeader("Request-id") int requestId) {
         try {
-            int p_id = P.getPId();
-            return cartManager.removeProductFromCart(p_id, requestId);
+            return cartManager.removeProductFromCart(PId, requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }
 
     @GetMapping("/products")
-    public ResponseDto<?> getAllProductsFromCart(@RequestHeader("Request-id") int requestId, @RequestBody PagingDto request) {
+    public ResponseDto<?> getAllProductsFromCart(@RequestHeader("Request-id") int requestId, @RequestParam(defaultValue = "0") int page,
+                                                 @RequestParam(defaultValue = "10") int size ) {
         try {
-            int page = request.getPage();
-            int size = request.getSize();
             Pageable pageable = PageRequest.of(page, size);
             return cartManager.getAllProductsFromCart(requestId, pageable);
         } catch (Exception e) {
@@ -66,10 +64,22 @@ public class cartController {
     @PatchMapping("/quantity")
     public ResponseDto<?> UpdateQuantity(@RequestBody productRequestDto P, @RequestHeader("Request-id") int requestId) {
         try {
-            int pId = P.getPId();
+            int pId = P.getProductId();
+            System.out.println("the id of the product to be updated is   " + pId);
             int quantity = P.getQuantity();
             return cartManager.updateQuantity(pId, quantity, requestId);
         } catch (Exception e) {
+            return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
+        }
+    }
+
+    @PostMapping("/bill")
+    public ResponseDto<?> getBillOfCart(@RequestHeader("Request-id") int requestId , @RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "10") int size ){
+        try{
+            Pageable pageable = PageRequest.of(page, size);
+            return cartManager.getBillOfCart(requestId,pageable);
+        }catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
     }

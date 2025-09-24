@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @AllArgsConstructor
 @NoArgsConstructor
 public class productRequestDto {
-    private int pId;
+    private int productId;
     private String name;
     private String description;
     private long price;

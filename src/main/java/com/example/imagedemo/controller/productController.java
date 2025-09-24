@@ -68,7 +68,7 @@ public class productController {
     @DeleteMapping("/delete")
     public ResponseDto<?> deleteProduct(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            return (productsManager.deleteProduct(request.getPId(), requestId));
+            return (productsManager.deleteProduct(request.getProductId(), requestId));
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }
@@ -86,7 +86,7 @@ public class productController {
     @PatchMapping("/updateQuantity")
     public ResponseDto<?> updateQuantity(@RequestBody productRequestDto request, @RequestHeader("Request-id") int requestId) {
         try {
-            return productsManager.updateQuantity(request.getPId(), request.getQuantity(), requestId);
+            return productsManager.updateQuantity(request.getProductId(), request.getQuantity(), requestId);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

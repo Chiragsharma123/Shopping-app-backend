@@ -269,7 +269,7 @@ public class OrderManagerImpl implements OrderValidation {
             }
             double totalItemsPrice = 0;
             for (CartOrderProductList items : itemsCart) {
-                totalItemsPrice += items.getProduct().getPrice();
+                totalItemsPrice += items.getProduct().getPrice() * items.getQuantity();
             }
 
             List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
@@ -277,8 +277,8 @@ public class OrderManagerImpl implements OrderValidation {
             double totalDiscount = 0;
             billResponseDto billResponse = new billResponseDto();
             double discountAmount = 0;
+            logger.info("Offer is valid wait offer is applying and cart is getting updated");
             for (CartOrderProductList x : itemsCart) {
-                logger.info("Offer is valid wait offer is applying and cart is getting updated");
                 for (CartOrderProductList items : itemsCart) {
                     items.setCoupon(coupon);
                     cartService.additem(items);
@@ -294,11 +294,14 @@ public class OrderManagerImpl implements OrderValidation {
             if (totalItemsPrice > coupon.getOfferAvailableOn()) {
                 if (coupon.getDiscountUnit().equals("Percentage")) {
                     discountAmount = (coupon.getDiscountValue() * totalItemsPrice) / 100;
+                    System.out.println("discount amount of percentage " +  discountAmount);
                 } else if (coupon.getDiscountUnit().equals("Price")) {
                     discountAmount = coupon.getDiscountValue();
+                    System.out.println("disccount amount of price  " + discountAmount);
                 }
             }
             totalDiscount += discountAmount;
+            System.out.println("total discount " + totalDiscount);
             order.setCart(cart);
             order.setStatus("Placed");
             order.setTotalPrice(subtotal);

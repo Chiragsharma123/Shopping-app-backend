@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/coupon")
+@CrossOrigin(allowedHeaders =  "*")
 public class couponController {
     @Autowired
     private couponManagerImpl couponManager;
@@ -35,9 +36,10 @@ public class couponController {
     }
 
     @PostMapping("/ApplyCoupon")
-    public ResponseDto<?> ApplyCoupon(@RequestBody couponRequestDto Coupon, @RequestHeader("Request-id") int requestId) {
+    public ResponseDto<?> ApplyCoupon(@RequestBody couponRequestDto coupon, @RequestHeader("Request-id") int requestId) {
         try {
-            return couponManager.ApplyCoupon(requestId, Coupon);
+            System.out.println(coupon);
+            return couponManager.ApplyCoupon(requestId, coupon);
         } catch (Exception e) {
             return new ResponseDto<>(Status.INTERNAL_ERROR.getStatusCode().value(), Status.INTERNAL_ERROR.getStatusDescription(), requestId, e.getMessage(), null);
         }

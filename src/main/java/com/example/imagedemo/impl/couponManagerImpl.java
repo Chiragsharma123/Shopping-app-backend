@@ -51,8 +51,8 @@ public class couponManagerImpl implements couponValidation {
             logger.error("There is no product found for the provided id");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No product found in the database", null);
         }
-        Coupon couponToAdd = couponService.findSpecificCoupon(couponRequestDto.getCId());
-        if (couponToAdd == null && couponRequestDto.getCId() != 0) {
+        Coupon couponToAdd = couponService.findSpecificCoupon(couponRequestDto.getCouponId());
+        if (couponToAdd == null && couponRequestDto.getCouponId() != 0) {
             logger.error("The coupon doesn't exists in the database please provide a valid coupon id");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "The coupon doesn't exists in the database please provide a valid coupon id", null);
         }
@@ -133,6 +133,7 @@ public class couponManagerImpl implements couponValidation {
         List<activeCouponResponseDto> activeCouponResponseDtoList = new ArrayList<>();
         for (Coupon items : ActiveCoupons) {
             activeCouponResponseDto ActiveCouponsDto = new activeCouponResponseDto();
+            ActiveCouponsDto.setId(items.getCId());
             ActiveCouponsDto.setCode(items.getCode());
             ActiveCouponsDto.setDescription(items.getDescription());
             ActiveCouponsDto.setExpiresAt(items.getExpiresAt());
@@ -144,12 +145,12 @@ public class couponManagerImpl implements couponValidation {
 
     @Override
     public ResponseDto<?> ApplyCoupon(int requestId, couponRequestDto c) throws Exception {
-        if (c.getCId() == 0) {
+        if (c.getCouponId() == 0) {
             logger.error("Please provide the id of the coupon you want to apply");
             return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "Please provide the id of the coupon ", null);
         }
-        Coupon coupon = couponService.findSpecificCoupon(c.getCId());
-        if (c.getCId() != 0 && coupon == null) {
+        Coupon coupon = couponService.findSpecificCoupon(c.getCouponId());
+        if (c.getCouponId() != 0 && coupon == null) {
             logger.error("Please enter a valid coupon the coupon doesn't exists");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Please enter a valid coupon ", null);
         }
@@ -178,7 +179,7 @@ public class couponManagerImpl implements couponValidation {
             }
             double totalItemsPrice = 0;
             for (CartOrderProductList items : itemsCart) {
-                totalItemsPrice += items.getProduct().getPrice();
+                totalItemsPrice += items.getProduct().getPrice() * items.getQuantity();
                 System.out.println(totalItemsPrice);
             }
             if (totalItemsPrice > coupon.getOfferAvailableOn()) {
@@ -262,7 +263,7 @@ public class couponManagerImpl implements couponValidation {
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Coupon applied successfully", billResponse);
         }
         logger.error("The conditions of the coupon {} are not full filled", coupon.getCode());
-        return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "The conditions of the coupon are not fullfilled", null);
+        return new ResponseDto<>(Status.VALIDATION_FAILED.getStatusCode().value(), Status.VALIDATION_FAILED.getStatusDescription(), requestId, "The conditions of the coupon are not fullfilled", null);
     }
 
     @Override

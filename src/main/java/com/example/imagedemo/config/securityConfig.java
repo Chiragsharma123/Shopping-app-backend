@@ -40,7 +40,7 @@ public class securityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).cors(cors -> cors.configurationSource(corsConfigurationSource())).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/**", "/user/login", "/encrypt", "/seller/register","/user/signout","/user/checkUser").permitAll().requestMatchers( "/cart/productAdd", "/cart/productDelete", "/cart/products", "/cart/quantity", "/order/**", "coupon/fetchList", "coupon/ApplyCoupon", "coupon/removeCoupon").authenticated().requestMatchers("/products/upload").hasAnyRole("ADMIN", "SELLER").requestMatchers("/user/user/**", "/user/delete/**", "coupon/create", "/dashboard/", "/roles/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable()).logout(logout -> logout.disable()).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).cors(cors -> cors.configurationSource(corsConfigurationSource())).authorizeHttpRequests(auth -> auth.requestMatchers("/user/register", "/products/**", "/user/login", "/encrypt", "/seller/register","/user/signout", "cart/bill","/cart/products","/cart/productAdd","/cart/productDelete/**","/user/checkUser").permitAll().requestMatchers(   "/cart/quantity","/coupon/ApplyCoupon", "/order/**", "coupon/fetchList",  "coupon/removeCoupon").authenticated().requestMatchers("/products/upload").hasAnyRole("ADMIN", "SELLER").requestMatchers("/user/user/**", "/user/delete/**", "coupon/create", "/dashboard/", "/roles/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -83,7 +83,7 @@ public class securityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE" ,"OPTIONS","PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

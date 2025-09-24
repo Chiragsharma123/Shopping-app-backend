@@ -2,6 +2,7 @@ package com.example.imagedemo.impl;
 
 import com.example.imagedemo.common.ResponseDto;
 import com.example.imagedemo.common.Status;
+import com.example.imagedemo.dto.billResponseDto;
 import com.example.imagedemo.dto.productRequestDto;
 import com.example.imagedemo.dto.productResponseDto;
 import com.example.imagedemo.service.cartOrderProductService;
@@ -23,10 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -44,13 +42,13 @@ public class CartManagerImpl implements CartValidation {
     @Override
     public ResponseDto<?> addProductToCart(productRequestDto P, String username, int requestId) throws Exception {
         users user = userService.getByUsername(username);
-        int pid = P.getPId();
+        int pid = P.getProductId();
         int quantity = P.getQuantity();
         Product p = productService.getSpecificProduct(pid);
         Set<String> productCode = Arrays.stream(p.getDeliveryPinCodes().split(",")).map(String::trim).collect(Collectors.toSet());
         if(!productCode.contains(P.getDeliveryPinCodes().trim())){
             logger.error("Product is not available for the provided pincode");
-            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(),Status.BAD_REQUEST.getStatusDescription(), requestId,"Product is not available at the provided pincode",null);
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(),Status.NOT_FOUND.getStatusDescription(), requestId,"Product is not available at the provided pincode",null);
         }
         if(pid!=0 && p == null ){
             logger.error("The Product doesn't exists in the database");
@@ -108,7 +106,7 @@ public class CartManagerImpl implements CartValidation {
         ItemToDelete.setQuantity(0);
         cartService.additem(ItemToDelete);
         logger.info("Item {} removed from the cart", p.getName());
-        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Product removed from the cart", p.getName());
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Product removed from the cart", p.getPId());
     }
 
     @Override
@@ -129,23 +127,24 @@ public class CartManagerImpl implements CartValidation {
         }
         for (CartOrderProductList x : itemsCart) {
             productResponseDto ProductDto = new productResponseDto();
+            ProductDto.setId(x.getProduct().getPId());
             ProductDto.setName(x.getProduct().getName());
             ProductDto.setPrice(x.getProduct().getPrice());
             ProductDto.setCategory(x.getProduct().getCategory());
             ProductDto.setDescription(x.getProduct().getDescription());
-            ProductDto.setImageBase64(Arrays.toString(x.getProduct().getImageData()));
+            ProductDto.setImageBase64(Base64.getEncoder().encodeToString(x.getProduct().getImageData()));
             ProductDto.setQuantity(x.getQuantity());
             response.add(ProductDto);
         }
         logger.info("All Items of Cart for user {} is fetched", u.getUsername());
         return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "All the items from the cart are fetched successfully", response);
-
     }
 
     @Override
     public ResponseDto<?> updateQuantity(int pId, int quantity, int requestId) {
         logger.info("Updating the quantity");
         Product p = productService.getSpecificProduct(pId);
+        System.out.println(p + "produt is here");
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
             logger.error("No user logged in");
@@ -153,6 +152,8 @@ public class CartManagerImpl implements CartValidation {
         }
         users user = userService.getByUsername(auth.getName());
         Cart c = cartUseService.getSpecificCart(user.getId());
+        System.out.println(c.getCartId() + "cart id");
+//        System.out.println(c);
         CartOrderProductList ItemToUpdate = cartService.getSpecificItems(c, p,"Active");
         if (ItemToUpdate == null) {
             CartOrderProductList itemsCart = new CartOrderProductList();
@@ -166,9 +167,53 @@ public class CartManagerImpl implements CartValidation {
             cartUseService.setStatus(c);
             return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Product added to the cart Successfully", p.getName());
         }
+
+        ItemToUpdate.setProduct(p);
+        ItemToUpdate.setCart(c);
         ItemToUpdate.setQuantity(quantity);
+        ItemToUpdate.setUpdatedAt(LocalDateTime.now());
         cartService.additem(ItemToUpdate);
         logger.info("Quantity of Product {} in cart is updated for user {}", p.getName(), user.getUsername());
         return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Updated successfully", p.getName());
+    }
+
+    @Override
+    public ResponseDto<?> getBillOfCart(int requestId, Pageable pageable) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        logger.info("User {} is trying to get all the items of the cart", auth.getName());
+        if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
+            logger.error("No user logged in");
+            return new ResponseDto<>(Status.BAD_REQUEST.getStatusCode().value(), Status.BAD_REQUEST.getStatusDescription(), requestId, "User need to logged in to access the cart", null);
+        }
+        users u = userService.getByUsername(auth.getName());
+        Cart cart = cartUseService.getSpecificCart(u.getId());
+        Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfUser(cart, pageable, "Active");
+        if (itemsCart == null || itemsCart.isEmpty()) {
+            logger.warn("No item to show in the cart");
+            return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Cart is empty", null);
+        }
+        List<billResponseDto.ProductBillItems> billItems = new ArrayList<>();
+        double subtotal = 0;
+        billResponseDto billResponse = new billResponseDto();
+
+        for (CartOrderProductList x : itemsCart) {
+            billResponseDto.ProductBillItems response = new billResponseDto.ProductBillItems();
+            response.setName(x.getProduct().getName());
+            response.setPrice(x.getProduct().getPrice());
+            response.setQuantity(x.getQuantity());
+            response.setTotal(x.getProduct().getPrice() * x.getQuantity());
+            billItems.add(response);
+            subtotal += response.getTotal();
+        }
+        double discountAmount = 0;
+        billResponse.setItems(billItems);
+        billResponse.setSubtotal(subtotal);
+        billResponse.setDiscountedAmount(discountAmount);
+        subtotal -= discountAmount;
+        billResponse.setAfterDiscountAmount(subtotal);
+        billResponse.setGst(subtotal * 0.18);
+        billResponse.setTotal(subtotal + subtotal * 0.18);
+        logger.info("Bill for the cart items is generated for estimation");
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(),Status.SUCCESS.getStatusDescription(), requestId,"Bill for the cart items is generated for estimation",billResponse);
     }
 }

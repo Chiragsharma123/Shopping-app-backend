@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class activeCouponResponseDto {
+    private int id;
     private String code;
     private String description;
     private LocalDateTime expiresAt;

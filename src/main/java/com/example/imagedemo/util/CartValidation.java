@@ -12,4 +12,6 @@ public interface CartValidation {
     ResponseDto<?> getAllProductsFromCart(int requestId , Pageable pageable) throws Exception;
 
     ResponseDto<?> updateQuantity(int pId, int quantity, int requestId) throws Exception;
+
+    ResponseDto<?> getBillOfCart(int requestId, Pageable pageable);
 }

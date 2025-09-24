@@ -9,7 +9,7 @@ public interface couponValidation {
 
     ResponseDto<?> getAllActiveCoupon(int requestId)throws Exception;
 
-    ResponseDto<?> ApplyCoupon(int requestId,couponRequestDto Coupon)throws Exception;
+    ResponseDto<?> ApplyCoupon(int requestId, couponRequestDto couponRequestDto)throws Exception;
 
     ResponseDto<?> removeCoupon(int requestId, Pageable pageable)throws Exception;
 }
