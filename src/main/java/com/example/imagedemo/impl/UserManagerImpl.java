@@ -162,20 +162,23 @@ public class UserManagerImpl implements UserValidation {
                 ResponseCookie loginCookie = ResponseCookie.from("jwtToken", token).httpOnly(true).secure(false).sameSite("Lax").path("/").maxAge(10 * 60 * 60).build();
                 response.addHeader(HttpHeaders.SET_COOKIE, loginCookie.toString());
                 logger.info("{} {} logged in successfully",role, User.getUsername());
+                loginResponseDto loginResponseDto = new loginResponseDto();
                 if("ROLE_USER".equalsIgnoreCase(role)) {
                     users u = userService.getByUsername(User.getUsername());
                     u.setStatus("Active");
+                    loginResponseDto.setUsername(User.getUsername());
+                    loginResponseDto.setRole(role);
+                    loginResponseDto.setToken(token);
                     userService.registerUser(u);
                 }
                 if("ROLE_SELLER".equalsIgnoreCase(role)){
                     Seller seller = sellerService.findByEmail(User.getUsername());
                     seller.setStatus("Active");
+                    loginResponseDto.setUsername(seller.getName());
+                    loginResponseDto.setRole("seller");
+                    loginResponseDto.setToken(token);
                     sellerService.registerSeller(seller);
                 }
-                loginResponseDto loginResponseDto = new loginResponseDto();
-                loginResponseDto.setUsername(User.getUsername());
-                loginResponseDto.setRole(role);
-                loginResponseDto.setToken(token);
                 return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User logged in successfully", loginResponseDto);
             } else {
                 logger.error("Login failed: Invalid credentials for {}", User.getUsername());
@@ -254,9 +257,26 @@ public class UserManagerImpl implements UserValidation {
     @Override
     public ResponseDto<?> checkUser(int requestId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String role = auth.getAuthorities().stream()
+                .findFirst()
+                .map(                                                                                                                             grantedAuthority -> grantedAuthority.getAuthority())
+                .orElse("ROLE_USER");
+        userDto userDto = new userDto();
         if (auth.getName() == null || !auth.getPrincipal().equals("anonymousUser")) {
             logger.info("User is logged in");
-            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User Access is valid", auth.getName());
+            if("ROLE_USER".equalsIgnoreCase(role)) {
+                users user = userService.getByUsername(auth.getName());
+
+                userDto.setRole(user.getRole());
+                userDto.setUsername(user.getUsername());
+            }
+            if("ROLE_SELLER".equalsIgnoreCase(role)){
+                Seller seller = sellerService.findByEmail(auth.getName());
+
+                userDto.setUsername(seller.getName());
+                userDto.setRole("seller");
+            }
+            return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "User Access is valid", userDto);
         }
         return new ResponseDto<>(Status.UNAUTHORIZED.getStatusCode().value() , Status.UNAUTHORIZED.getStatusDescription(), requestId , "User is invalid" , null);
     }

@@ -26,12 +26,15 @@ import com.itextpdf.layout.properties.VerticalAlignment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -62,7 +65,7 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         users user = cart.getUser();
         Coupon coupon = order.getCoupon();
         Page<CartOrderProductList> itemsCart = cartService.getAllItemsOfOrder(order, pageable);
-        if (itemsCart.isEmpty() || order.getStatus().equals("Invoiced") || order.getStatus().equals("Inactive")) {
+        if (itemsCart.isEmpty() ||order.getStatus().equals("Inactive")) {
             logger.error("There is no product in the order {} so invoice can't be generated", orderId);
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "No items is placed in the order", null);
         }
@@ -160,7 +163,6 @@ public class InvoiceManagerImpl implements InvoiceValidation {
         sign.setAutoScale(false);
         document.add(new Paragraph("Thank you for shopping with MyEcommerceSite.com").setFontColor(com.itextpdf.kernel.colors.ColorConstants.GRAY).setTextAlignment(TextAlignment.LEFT).setMarginTop(20));
         document.add(sign);
-
         document.close();
         order.setStatus("Invoiced");
         orderService.saveOrder(order);

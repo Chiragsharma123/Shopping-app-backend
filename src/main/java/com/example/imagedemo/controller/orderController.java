@@ -55,7 +55,7 @@ public class orderController {
         }
     }
 
-    @GetMapping("/ProductList")
+    @PostMapping("/ProductList")
     public ResponseDto<?> getAllProductOfOrder(@RequestHeader("Request-id") int requestId, @RequestBody OrderDto request) {
         try {
             return orderManager.getAllProductsOfOrder(requestId, request);

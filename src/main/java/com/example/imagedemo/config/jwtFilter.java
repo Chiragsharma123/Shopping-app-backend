@@ -34,8 +34,16 @@ public class jwtFilter extends OncePerRequestFilter {
     @Autowired
     private MySellerService sellerService;
 
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        String path = request.getServletPath();
+        if (path.startsWith("/invoices")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String token = null;
         String username = null;
         Cookie[] cookies = request.getCookies();

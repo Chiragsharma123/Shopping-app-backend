@@ -20,10 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -125,12 +122,20 @@ public class OrderManagerImpl implements OrderValidation {
         }
         Cart c = u.getCart();
         Page<OrderCart> order = orderService.getAllOrders(c, pageable, "Placed");
-        List<Integer> orderIds = new ArrayList<>();
+        Page<OrderCart>orderInvoiced = orderService.getAllOrders(c, pageable, "Invoiced");
+        ArrayList<OrderDto>orders = new ArrayList<>();
         for (OrderCart x : order) {
-            orderIds.add(x.getOrderId());
+            OrderDto allOrder = new OrderDto();
+            allOrder.setOrderId(x.getOrderId());
+            orders.add(allOrder);
+        }
+        for(OrderCart x : orderInvoiced){
+            OrderDto allOrder = new OrderDto();
+            allOrder.setOrderId(x.getOrderId());
+            orders.add(allOrder);
         }
         logger.info("All the order for the {} are fetched successfully", u.getUsername());
-        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Orders List fetched successfully", orderIds);
+        return new ResponseDto<>(Status.SUCCESS.getStatusCode().value(), Status.SUCCESS.getStatusDescription(), requestId, "Orders List fetched successfully", orders);
     }
 
     @Override
@@ -179,17 +184,19 @@ public class OrderManagerImpl implements OrderValidation {
             logger.error("Order id not found in the database ");
             return new ResponseDto<>(Status.NOT_FOUND.getStatusCode().value(), Status.NOT_FOUND.getStatusDescription(), requestId, "Order Id doesn't exists", null);
         }
-        Page<CartOrderProductList> L = cartService.getAllProductsOfOrder(order, pageable);
-        List<Product> ProductList = new ArrayList<>();
-        for (CartOrderProductList l : L) {
-            ProductList.add(l.getProduct());
-        }
+        Page<CartOrderProductList> ProductList = cartService.getAllProductsOfOrder(order, pageable);
+//        List<Product> ProductList = new ArrayList<>();
+//        for (CartOrderProductList l : L) {
+//            ProductList.add(l.getProduct());
+//        }
         List<productResponseDto> responseList = new ArrayList<>();
-        for (Product items : ProductList) {
+        for (CartOrderProductList items : ProductList) {
             productResponseDto dto = new productResponseDto();
-            dto.setName(items.getName());
-            dto.setImageBase64(Arrays.toString(items.getImageData()));
-            dto.setPrice(items.getPrice());
+            dto.setId(items.getProduct().getPId());
+            dto.setName(items.getProduct().getName());
+            dto.setImageBase64(Base64.getEncoder().encodeToString(items.getProduct().getImageData()));
+            dto.setPrice(items.getProduct().getPrice());
+            dto.setQuantity(items.getQuantity());
             responseList.add(dto);
         }
         logger.info("All the products of the order number {} is fetched successfully", request.getOrderId());
@@ -212,7 +219,10 @@ public class OrderManagerImpl implements OrderValidation {
         users user = userService.getByUsername(auth.getName());
         Cart c = user.getCart();
         CartOrderProductList item = cartService.getProductToReturn(c, p, order);
-        item.setStatus("Returned");
+        item.setQuantity(item.getQuantity() - quantity);
+        if(item.getQuantity()==0) {
+            item.setStatus("Returned");
+        }
         cartService.additem(item);
         p.setQuantity(p.getQuantity() + quantity);
         p.setReturnCount(p.getReturnCount() + quantity);
